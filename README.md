@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Inventory Management System
 
 A Laravel application for tracking companies, product categories, storage locations, products, base units of measure, and stock levels.
@@ -64,3 +65,7 @@ If you discover a security vulnerability within Laravel, please send an e-mail t
 ## License
 
 The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+=======
+# OJT-inventory
+inventory system
+>>>>>>> c019be020e75e9a25e1d26f28fe2401b44139884
