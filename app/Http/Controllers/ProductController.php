@@ -7,6 +7,7 @@ use App\Models\Company;
 use App\Models\ProductCategory;
 use App\Models\BaseUnit;
 use App\Models\UnitConversion;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 
 class ProductController extends Controller
@@ -131,8 +132,17 @@ class ProductController extends Controller
      */
     public function destroy(Product $product)
     {
-        $product->delete();
+        try {
+            $product->delete();
 
-        return redirect()->route('products.index')->with('success', 'Product deleted successfully.');
+            return redirect()->route('products.index')->with('success', 'Product deleted successfully.');
+        } catch (QueryException $e) {
+            if ($e->getCode() == '23000' || str_contains($e->getMessage(), 'REFERENCE constraint')) {
+                return redirect()->route('products.index')
+                                 ->with('error', 'Cannot delete this product because it still has stock records or sales associated with it.');
+            }
+
+            throw $e;
+        }
     }
 }

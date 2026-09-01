@@ -9,6 +9,8 @@ use App\Http\Controllers\ProductCategoryController;
 use App\Http\Controllers\LocationController;
 use App\Http\Controllers\UnitOfMeasureController;
 use App\Http\Controllers\UnitConversionController;
+use App\Http\Controllers\UserController;
+use App\Http\Controllers\ProfileController;
 
 // Guest Routes (Accessible only when NOT logged in)
 Route::middleware('guest')->group(function () {
@@ -27,9 +29,15 @@ Route::middleware('auth')->group(function () {
     Route::resource('products', ProductController::class);
     Route::resource('categories', ProductCategoryController::class);
     Route::resource('inventory', InventoryController::class);
+    Route::get('/inventory/{inventory}/transfer', [InventoryController::class, 'showTransfer'])->name('inventory.transfer');
+    Route::post('/inventory/{inventory}/transfer', [InventoryController::class, 'transfer'])->name('inventory.transfer.store');
     Route::resource('locations', LocationController::class);
     Route::resource('base-units', UnitOfMeasureController::class);
     Route::resource('unit-conversions', UnitConversionController::class);
+    Route::resource('users', UserController::class);
+
+    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
 
     // Root Redirect
     Route::get('/', function () {

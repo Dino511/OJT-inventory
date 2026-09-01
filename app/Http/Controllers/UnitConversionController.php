@@ -52,7 +52,19 @@ class UnitConversionController extends Controller
     {
         $units = UnitOfMeasure::orderBy('name')->get();
 
-        return view('unit_conversions.edit', ['conversion' => $unit_conversion, 'units' => $units]);
+        $calculatorConversions = UnitConversion::all(['from_unit_id', 'to_unit_id', 'factor'])
+            ->map(fn ($c) => [
+                'from' => (int) $c->from_unit_id,
+                'to' => (int) $c->to_unit_id,
+                'factor' => (float) $c->factor,
+            ])
+            ->values();
+
+        return view('unit_conversions.edit', [
+            'conversion' => $unit_conversion,
+            'units' => $units,
+            'calculatorConversions' => $calculatorConversions,
+        ]);
     }
 
     public function update(Request $request, UnitConversion $unit_conversion)

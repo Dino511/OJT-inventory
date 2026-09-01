@@ -6,6 +6,7 @@ use App\Models\Inventory;
 use App\Models\Product;
 use App\Models\Location;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
 class InventoryController extends Controller
@@ -104,5 +105,76 @@ class InventoryController extends Controller
         $inventory->delete();
 
         return redirect()->route('inventory.index')->with('success', 'Inventory record deleted successfully.');
+    }
+
+    public function showTransfer(Inventory $inventory)
+    {
+        $inventory->load(['product', 'location']);
+        $companyId = $inventory->product->company_id;
+
+        // Every location (in the same company) that currently holds stock of
+        // this product — these are the valid "From Location" choices.
+        $sourceOptions = Inventory::where('product_id', $inventory->product_id)
+            ->where('quantity', '>', 0)
+            ->whereHas('location', fn ($query) => $query->where('company_id', $companyId))
+            ->with('location')
+            ->get();
+
+        $locations = Location::where('company_id', $companyId)->orderBy('name')->get();
+
+        return view('inventory.transfer', compact('inventory', 'sourceOptions', 'locations'));
+    }
+
+    public function transfer(Request $request, Inventory $inventory)
+    {
+        $companyId = $inventory->product->company_id;
+
+        $validated = $request->validate([
+            'from_location_id' => [
+                'required',
+                Rule::exists('inventories', 'location_id')->where('product_id', $inventory->product_id),
+            ],
+            'to_location_id' => [
+                'required',
+                'exists:locations,id',
+                'different:from_location_id',
+            ],
+            'quantity' => 'required|integer|min:1',
+        ], [
+            'to_location_id.different' => 'Choose a different location to transfer to.',
+        ]);
+
+        $source = Inventory::where('product_id', $inventory->product_id)
+            ->where('location_id', $validated['from_location_id'])
+            ->whereHas('location', fn ($query) => $query->where('company_id', $companyId))
+            ->lockForUpdate()
+            ->firstOrFail();
+
+        if ($validated['quantity'] > $source->quantity) {
+            return back()->withInput()->withErrors([
+                'quantity' => "Only {$source->quantity} units available at the selected location.",
+            ]);
+        }
+
+        DB::transaction(function () use ($source, $validated) {
+            $source->decrement('quantity', $validated['quantity']);
+
+            $destination = Inventory::where('product_id', $source->product_id)
+                ->where('location_id', $validated['to_location_id'])
+                ->lockForUpdate()
+                ->first();
+
+            if ($destination) {
+                $destination->increment('quantity', $validated['quantity']);
+            } else {
+                Inventory::create([
+                    'product_id' => $source->product_id,
+                    'location_id' => $validated['to_location_id'],
+                    'quantity' => $validated['quantity'],
+                ]);
+            }
+        });
+
+        return redirect()->route('inventory.index')->with('success', 'Stock transferred successfully.');
     }
 }

@@ -13,8 +13,16 @@
     </div>
 
     <div class="card shadow-sm">
+        <div class="card-header p-3 bg-white">
+            <div class="input-group input-group-sm" style="max-width: 320px;">
+                <span class="input-group-text bg-white border-end-0 text-muted">
+                    <i class="bi bi-search"></i>
+                </span>
+                <input type="text" id="tableSearch" class="form-control border-start-0" placeholder="Search company or location...">
+            </div>
+        </div>
         <div class="card-body p-0">
-            <table class="table table-hover align-middle mb-0">
+            <table class="table table-hover align-middle mb-0" id="locationsTable">
                 <thead>
                     <tr>
                         <th class="ps-4">ID</th>
@@ -50,4 +58,17 @@
         </div>
     </div>
 </div>
+
+@push('scripts')
+    <script>
+        document.getElementById('tableSearch')?.addEventListener('keyup', function() {
+            let filter = this.value.toLowerCase();
+            let rows = document.querySelectorAll('#locationsTable tbody tr');
+            rows.forEach(row => {
+                let text = row.textContent.toLowerCase();
+                row.style.display = text.includes(filter) ? '' : 'none';
+            });
+        });
+    </script>
+@endpush
 @endsection

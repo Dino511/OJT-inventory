@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Company;
 use App\Models\ProductCategory;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 
 class ProductCategoryController extends Controller
@@ -52,8 +53,17 @@ class ProductCategoryController extends Controller
 
     public function destroy(ProductCategory $category)
     {
-        $category->delete();
+        try {
+            $category->delete();
 
-        return redirect()->route('categories.index')->with('success', 'Category deleted successfully.');
+            return redirect()->route('categories.index')->with('success', 'Category deleted successfully.');
+        } catch (QueryException $e) {
+            if ($e->getCode() == '23000' || str_contains($e->getMessage(), 'REFERENCE constraint')) {
+                return redirect()->route('categories.index')
+                                 ->with('error', 'Cannot delete this category because it still has products assigned to it.');
+            }
+
+            throw $e;
+        }
     }
 }

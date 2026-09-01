@@ -83,7 +83,17 @@
                                 <div class="fw-semibold text-dark">{{ $product->name }}</div>
                             </td>
                             <td class="text-secondary small">
-                                {{ $product->description ? Str::limit($product->description, 50) : 'N/A' }}
+                                @if($product->description)
+                                    @if(Str::length($product->description) > 50)
+                                        <span tabindex="0" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-trigger="hover focus" title="{{ $product->description }}" style="cursor: help; border-bottom: 1px dotted #999;">
+                                            {{ Str::limit($product->description, 50) }}
+                                        </span>
+                                    @else
+                                        {{ $product->description }}
+                                    @endif
+                                @else
+                                    N/A
+                                @endif
                             </td>
                             <td class="text-secondary small">
                                 {{ $product->company->name ?? 'N/A' }}
@@ -102,7 +112,7 @@
                                 {{ $product->baseUnit->name ?? 'Piece' }}
                                 @if($conversion = $conversions->get($product->base_unit_id))
                                     <div class="text-muted" style="font-size: 0.75rem;">
-                                        = {{ (float) $conversion->factor }} {{ $conversion->toUnit->name ?? '' }}
+                                        = {{ (float) $conversion->factor * ($product->unit_value ?? 1) }} {{ $conversion->toUnit->name ?? '' }}
                                     </div>
                                 @endif
                             </td>
@@ -138,6 +148,17 @@
     </div>
 @endsection
 
+@push('styles')
+    <style>
+        .tooltip .tooltip-inner {
+            max-width: 320px;
+            text-align: left;
+            white-space: normal;
+            word-wrap: break-word;
+        }
+    </style>
+@endpush
+
 @push('scripts')
     <script>
         document.getElementById('tableSearch')?.addEventListener('keyup', function() {
@@ -147,6 +168,10 @@
                 let text = row.textContent.toLowerCase();
                 row.style.display = text.includes(filter) ? '' : 'none';
             });
+        });
+
+        document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(function (el) {
+            new bootstrap.Tooltip(el);
         });
     </script>
 @endpush

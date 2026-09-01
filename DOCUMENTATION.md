@@ -31,8 +31,9 @@ Once signed in, the top navigation bar gives you access to every module:
 | Products | The product catalog |
 | Base Units | Units of measure (e.g. Kilogram/kg, Piece/pc, Liter/ltr) used by products |
 | Stock | Stock levels — how much of each product is on hand at each location |
+| Users | User accounts and which company each one belongs to |
 
-Each module works the same way: a list page with **New**, **Edit** (pencil icon), and **Delete** (trash icon) actions.
+Each module works the same way: a list page with **New**, **Edit** (pencil icon), and **Delete** (trash icon) actions. Your own name in the top-right of the navbar links to **My Profile**, where you can update your name/email or change your password.
 
 ### Companies
 
@@ -50,7 +51,7 @@ Companies are the top-level entity — categories, locations, and products are a
 
 ### Locations
 
-- **List**: `/locations`.
+- **List**: `/locations` — has a search box that filters instantly (no page reload) as you type, matching against company name, location name, or description.
 - **Create**: choose the owning **Company**, enter a name and an optional description.
 - Represents a place stock can be kept (a warehouse, a shelf, a store branch).
 
@@ -66,7 +67,9 @@ Companies are the top-level entity — categories, locations, and products are a
   6. Enter a **Selling Price** and optional **Cost** — these drive the price shown at checkout in the companion POS app; leave Selling Price at 0 for products not sold through the register.
   7. Save.
 - **Edit**: same form, pre-filled with the product's current values.
-- **Delete**: from the list page.
+- **Delete**: from the list page. Blocked with a clear message (not a crash) if the product still has stock records or sales tied to it — see [Delete safety](#delete-safety) below.
+- The list's **Description** column truncates long text and shows the full description in a hover tooltip (works with keyboard focus too, for accessibility).
+- The **Base Unit** column shows the product's packaging (e.g. "20.00 Box") plus, if a unit conversion is defined for that base unit, the converted total for this specific product — `unit_value × conversion factor`, e.g. 20 Boxes at "1 Box = 12 Piece" shows "= 240 Piece", not just the flat 12.
 
 ### Base Units
 
@@ -82,6 +85,17 @@ Companies are the top-level entity — categories, locations, and products are a
 - **Edit**: update the quantity, or reassign the product/location, from the list's **Edit** action.
 - Each product can only have **one** stock record per location — trying to create a second one for the same product+location pair shows a validation message telling you to edit the existing record instead.
 - The companion POS app has its own equivalent Stock page (scoped to whichever location a cashier is currently selling from) — both write to the same `inventories` table, so a change made in either app is immediately visible in the other.
+- **Transfer** (the transfer icon on a stock row): moves quantity of that product from one location to another, both within the same company.
+  - **From Location** is a dropdown of every location (in the same company) that currently has stock of this product — not just the row you clicked — showing how many units are available at each. Switching it live-updates the "available" badge, caps the quantity input at that location's stock, and disables that same location in the **Transfer To** list so you can't transfer somewhere to itself.
+  - **Transfer To** lists every location in the company; if the destination doesn't have a stock record for this product yet, one is created automatically.
+  - The whole move happens in a single database transaction — decrementing the source and incrementing (or creating) the destination together.
+
+### Users
+
+- **List**: `/users` — every account and which company (if any) it belongs to.
+- **Create/Edit**: name, email, password (leave blank on edit to keep the current password), and an optional **Company** assignment.
+- **Delete**: blocked with a message if the user still has sales or other records tied to their account; you also can't delete the account you're currently signed in as.
+- This is the only place in the app that actually sets `users.company_id` — the companion POS app reads that field to know which company a cashier belongs to, but registering directly through `/register` still leaves it `null` (see Known Issues).
 
 ---
 
@@ -167,7 +181,7 @@ vendor/bin/pint
 
 ### Architecture
 
-**Routing & auth** (`routes/web.php`): a `guest` middleware group holds `/login` and `/register`; everything else sits behind an `auth` middleware group and is registered as a standard `Route::resource(...)` per module (`companies`, `products`, `categories` → `ProductCategoryController`, `locations`, `base-units` → `UnitOfMeasureController`). Root `/` redirects to `products.index`.
+**Routing & auth** (`routes/web.php`): a `guest` middleware group holds `/login` and `/register`; everything else sits behind an `auth` middleware group and is registered as a standard `Route::resource(...)` per module (`companies`, `products`, `categories` → `ProductCategoryController`, `locations`, `base-units` → `UnitOfMeasureController`, `unit-conversions`, `users`), plus two extra non-resource routes for the Transfer flow (`GET`/`POST /inventory/{inventory}/transfer`) and two for the self-service profile (`GET`/`PUT /profile`). Root `/` redirects to `products.index`.
 
 **Data model:**
 
@@ -180,7 +194,7 @@ vendor/bin/pint
 | `UnitOfMeasure` | `base_units` | `id` | Despite the class name, its `$table` is overridden to `base_units` — this is the model backing the "Base Units" feature |
 | `BaseUnit` | `base_units` | `id` | A second model pointing at the same table as `UnitOfMeasure`; only used to populate the product form's unit picker |
 | `Inventory` | `inventories` | `id` | Product + Location + quantity; unique per (product, location) pair. Has two quantity columns, see Known Issues |
-| `User` | `users` | `id` | Standard Laravel auth user |
+| `User` | `users` | `id` | Standard Laravel auth user; `company_id` (nullable) + a `company()` relation, set via the Users module — read by the companion POS app to know which company a cashier belongs to |
 
 ```mermaid
 erDiagram
@@ -198,11 +212,29 @@ erDiagram
 - Several models hardcode `company_id` as both the local and foreign key in relationships, since `companies.company_id` isn't the Eloquent-default `id`.
 - A cascade delete was deliberately removed from `inventories.location_id` (see migration `2026_08_24_000007_create_inventories_table`) to avoid SQL Server's multiple-cascade-path error.
 
+### Delete safety
+
+`CompanyController`, `ProductController`, `LocationController`, `ProductCategoryController`, `UserController`, and `UnitOfMeasureController`'s `destroy()` methods all catch `QueryException` around the delete: if SQL Server refuses it with a `23000`/"REFERENCE constraint" error (the row is still referenced elsewhere — a company with products, a product with stock/sales, a unit still assigned to products, etc.), the user gets a plain-language flash error instead of the framework's 500 error page. If you add a new `destroy()` method for a model that anything else can reference, copy this pattern rather than calling `->delete()` directly:
+
+```php
+try {
+    $model->delete();
+    return redirect()->route('...')->with('success', '...');
+} catch (\Illuminate\Database\QueryException $e) {
+    if ($e->getCode() == '23000' || str_contains($e->getMessage(), 'REFERENCE constraint')) {
+        return redirect()->route('...')->with('error', 'Cannot delete this ... because ...');
+    }
+    throw $e;
+}
+```
+
+`InventoryController::destroy()` deliberately does **not** have this guard — nothing in the current schema holds a foreign key against `inventories.id`, so it can't actually fail this way.
+
 ### Known Issues
 
 - The `inventories` table has two overlapping quantity columns: an original `quantity_on_hand` (from the initial migration) and a later `quantity` (added in `2026_08_25_050010_add_quantity_to_inventories_table`). This app's own `InventoryController` only reads/writes `quantity`. The companion POS app treats whichever column is larger as the true on-hand count (`Inventory::effectiveStock()`) and writes both back in sync on every sale, refund, or stock edit — so in practice both columns stay equal as long as stock changes go through either app's UI, but a record created only through this app's older `db:seed`/tinker paths could still leave `quantity_on_hand` at its default `0` until the next POS-side write touches it.
 - Two separate migrations created similarly-named tables early in the project's history — `base_units` and an unrelated, unused `unit_of_measures` table, plus a separate empty `categories` table distinct from `product_categories`. These are historical leftovers; the live features use `base_units` and `product_categories` respectively. See `CLAUDE.md` for the full list of naming quirks to be careful of when extending this codebase.
-- There is no company-scoping anywhere in this app — every signed-in user sees every company's data (companies, locations, products, stock). The companion POS app added its own scoping on its side (each POS user is tied to one company via `users.company_id`), but that constraint isn't enforced here.
+- There is no company-scoping anywhere in this app — every signed-in user sees every company's data (companies, locations, products, stock), regardless of which company their own account is assigned to. The Users module now lets you *set* `users.company_id` (previously nothing did), and the companion POS app enforces scoping on its own side using that field, but this app's own controllers still don't filter any query by it.
 
 ### Companion POS application
 

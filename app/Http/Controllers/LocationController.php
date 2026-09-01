@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Location;
 use App\Models\Company;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 
 class LocationController extends Controller
@@ -54,7 +55,17 @@ class LocationController extends Controller
 
     public function destroy(Location $location)
     {
-        $location->delete();
-        return redirect()->route('locations.index')->with('success', 'Location deleted successfully.');
+        try {
+            $location->delete();
+
+            return redirect()->route('locations.index')->with('success', 'Location deleted successfully.');
+        } catch (QueryException $e) {
+            if ($e->getCode() == '23000' || str_contains($e->getMessage(), 'REFERENCE constraint')) {
+                return redirect()->route('locations.index')
+                                 ->with('error', 'Cannot delete this location because it still has stock records or sales associated with it.');
+            }
+
+            throw $e;
+        }
     }
 }

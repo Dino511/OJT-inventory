@@ -82,16 +82,21 @@
                             <i class="bi bi-clipboard-data me-1"></i> Stock
                         </a>
                     </li>
+                    <li class="nav-item">
+                        <a class="nav-link {{ request()->routeIs('users.*') ? 'active' : '' }}" href="{{ route('users.index') }}">
+                            <i class="bi bi-people me-1"></i> Users
+                        </a>
+                    </li>
                 </ul>
             </div>
 
             <!-- Right: User / Logout -->
             @auth
                 <div class="d-flex align-items-center gap-3">
-                    <span class="text-light small">
+                    <a href="{{ route('profile.edit') }}" class="text-light small text-decoration-none {{ request()->routeIs('profile.*') ? 'fw-semibold' : '' }}">
                         <i class="bi bi-person-circle me-1 text-secondary"></i>
                         {{ Auth::user()->name }}
-                    </span>
+                    </a>
                     <form action="{{ route('logout') }}" method="POST" class="d-inline">
                         @csrf
                         <button type="submit" class="btn btn-sm btn-outline-light px-2 py-1" style="font-size: 0.8rem;">

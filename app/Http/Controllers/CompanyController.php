@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Company;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 
 class CompanyController extends Controller
@@ -49,9 +50,18 @@ class CompanyController extends Controller
 
     public function destroy(Company $company)
     {
-        $company->delete();
+        try {
+            $company->delete();
 
-        return redirect()->route('companies.index')
-                         ->with('success', 'Company deleted successfully.');
+            return redirect()->route('companies.index')
+                             ->with('success', 'Company deleted successfully.');
+        } catch (QueryException $e) {
+            if ($e->getCode() == '23000' || str_contains($e->getMessage(), 'REFERENCE constraint')) {
+                return redirect()->route('companies.index')
+                                 ->with('error', 'Cannot delete this company because it still has locations, products, categories, or users assigned to it. Reassign or delete those first.');
+            }
+
+            throw $e;
+        }
     }
 }
