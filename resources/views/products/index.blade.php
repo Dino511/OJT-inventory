@@ -9,9 +9,14 @@
             <h3 class="fw-bold mb-1">Products</h3>
             <p class="text-secondary small mb-0">Manage product inventory and catalog details.</p>
         </div>
-        <a href="{{ route('products.create') }}" class="btn btn-github btn-sm px-3">
-            <i class="bi bi-plus-lg me-1"></i> New Product
-        </a>
+        <div class="d-flex gap-2">
+            <a href="{{ route('products.history.index') }}" class="btn btn-outline-github btn-sm px-3">
+                <i class="bi bi-clock-history me-1"></i> Activity Log
+            </a>
+            <a href="{{ route('products.create') }}" class="btn btn-github btn-sm px-3">
+                <i class="bi bi-plus-lg me-1"></i> New Product
+            </a>
+        </div>
     </div>
 
     <!-- Main CRUD Card Container -->
@@ -68,7 +73,7 @@
                         </th>
                         <th scope="col">BASE UNIT</th>
                         <th scope="col">REORDER POINT</th>
-                        <th scope="col" class="text-end" style="width: 120px;">ACTIONS</th>
+                        <th scope="col" class="text-end" style="width: 160px;">ACTIONS</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -121,6 +126,9 @@
                             </td>
                             <td class="text-end">
                                 <div class="btn-group btn-group-sm" role="group">
+                                    <a href="{{ route('products.history', $product->id) }}" class="btn btn-outline-github" title="History">
+                                        <i class="bi bi-clock-history"></i>
+                                    </a>
                                     <a href="{{ route('products.edit', $product->id) }}" class="btn btn-outline-github" title="Edit">
                                         <i class="bi bi-pencil"></i>
                                     </a>

@@ -3,20 +3,25 @@
 @section('title', 'Inventory List')
 
 @section('content')
-    <!-- Breadcrumb & Page Header -->
+    <!-- Page Header & Breadcrumb -->
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
+            <h3 class="fw-bold mb-1">Inventory Items</h3>
             <nav aria-label="breadcrumb">
-                <ol class="breadcrumb mb-1">
+                <ol class="breadcrumb mb-0">
                     <li class="breadcrumb-item"><a href="{{ route('inventory.index') }}" class="text-decoration-none">Dashboard</a></li>
                     <li class="breadcrumb-item active" aria-current="page">Inventory</li>
                 </ol>
             </nav>
-            <h3 class="fw-bold mb-0">Inventory Items</h3>
         </div>
-        <a href="{{ route('inventory.create') }}" class="btn btn-github btn-sm px-3">
-            <i class="bi bi-plus-lg me-1"></i> Add Inventory
-        </a>
+        <div class="d-flex gap-2">
+            <a href="{{ route('inventory.history.index') }}" class="btn btn-outline-github btn-sm px-3">
+                <i class="bi bi-clock-history me-1"></i> Activity Log
+            </a>
+            <a href="{{ route('inventory.create') }}" class="btn btn-github btn-sm px-3">
+                <i class="bi bi-plus-lg me-1"></i> Add Inventory
+            </a>
+        </div>
     </div>
 
     <!-- Main Card & Data Table -->
@@ -57,7 +62,7 @@
                                 QUANTITY <i class="bi {{ $numIcon('quantity') }} small"></i>
                             </a>
                         </th>
-                        <th class="text-end" style="width: 190px;">ACTIONS</th>
+                        <th class="text-end" style="width: 230px;">ACTIONS</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -78,6 +83,9 @@
                                 </span>
                             </td>
                             <td class="text-end">
+                                <a href="{{ route('inventory.history', $item->id) }}" class="btn btn-outline-github btn-sm me-1" title="History">
+                                    <i class="bi bi-clock-history"></i>
+                                </a>
                                 <a href="{{ route('inventory.edit', $item->id) }}" class="btn btn-outline-github btn-sm me-1">
                                     <i class="bi bi-pencil me-1"></i> Edit
                                 </a>

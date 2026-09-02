@@ -6,6 +6,7 @@ use App\Models\Product;
 use App\Models\Company;
 use App\Models\ProductCategory;
 use App\Models\BaseUnit;
+use App\Models\ProductActivityLog;
 use App\Models\UnitConversion;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
@@ -144,5 +145,35 @@ class ProductController extends Controller
 
             throw $e;
         }
+    }
+
+    /**
+     * Full activity log across every product (including deleted ones,
+     * which is why this isn't scoped to a single Product model binding).
+     */
+    public function historyIndex()
+    {
+        $logs = ProductActivityLog::orderByDesc('created_at')->get();
+
+        // A log row's own action (e.g. "created") says nothing about whether
+        // that product was deleted *later* — check current existence directly
+        // so "View product history" never links to a since-deleted product.
+        $existingProductIds = Product::whereIn('id', $logs->pluck('product_id')->filter()->unique())
+            ->pluck('id')
+            ->all();
+
+        return view('products.history_index', compact('logs', 'existingProductIds'));
+    }
+
+    /**
+     * Activity log for a single, still-existing product.
+     */
+    public function history(Product $product)
+    {
+        $logs = ProductActivityLog::where('product_id', $product->id)
+            ->orderByDesc('created_at')
+            ->get();
+
+        return view('products.history', compact('product', 'logs'));
     }
 }

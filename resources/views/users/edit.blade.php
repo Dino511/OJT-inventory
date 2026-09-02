@@ -46,16 +46,26 @@
                         </div>
 
                         <div class="mb-3">
-                            <label for="company_id" class="form-label small fw-semibold">Company</label>
-                            <select id="company_id" name="company_id" class="form-select form-select-sm @error('company_id') is-invalid @enderror">
-                                <option value="">No company</option>
-                                @foreach($companies as $company)
-                                    <option value="{{ $company->company_id }}" {{ old('company_id', $user->company_id) == $company->company_id ? 'selected' : '' }}>
-                                        {{ $company->name }}
-                                    </option>
-                                @endforeach
-                            </select>
-                            @error('company_id')
+                            <label class="form-label small fw-semibold">Companies</label>
+                            @php $selectedCompanyIds = old('company_ids', $user->companies->pluck('company_id')->all()); @endphp
+                            <div class="border rounded p-2" style="max-height: 160px; overflow-y: auto;">
+                                @forelse($companies as $company)
+                                    <div class="form-check">
+                                        <input type="checkbox" name="company_ids[]" value="{{ $company->company_id }}" id="company_{{ $company->company_id }}"
+                                               class="form-check-input" {{ in_array($company->company_id, $selectedCompanyIds) ? 'checked' : '' }}>
+                                        <label for="company_{{ $company->company_id }}" class="form-check-label small">
+                                            {{ $company->name }}
+                                            @if($company->company_id == $user->company_id)
+                                                <span class="badge bg-success-subtle text-success border ms-1">Active</span>
+                                            @endif
+                                        </label>
+                                    </div>
+                                @empty
+                                    <span class="text-muted small">No companies exist yet.</span>
+                                @endforelse
+                            </div>
+                            <div class="form-text small">Check every company this user should be able to sell for. The badge marks their currently active company in the POS app.</div>
+                            @error('company_ids')
                                 <div class="invalid-feedback d-block small">{{ $message }}</div>
                             @enderror
                         </div>

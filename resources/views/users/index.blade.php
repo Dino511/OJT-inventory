@@ -28,7 +28,7 @@
                         <th scope="col" style="width: 80px;">ID</th>
                         <th scope="col">NAME</th>
                         <th scope="col">EMAIL</th>
-                        <th scope="col">COMPANY</th>
+                        <th scope="col">COMPANIES</th>
                         <th scope="col" class="text-end" style="width: 140px;">ACTIONS</th>
                     </tr>
                 </thead>
@@ -47,7 +47,15 @@
                                 </div>
                             </td>
                             <td class="text-secondary small">{{ $user->email }}</td>
-                            <td class="text-secondary small">{{ $user->company->name ?? 'N/A' }}</td>
+                            <td class="text-secondary small">
+                                @forelse($user->companies as $company)
+                                    <span class="badge {{ $company->company_id == $user->company_id ? 'bg-success-subtle text-success' : 'bg-light text-secondary' }} border me-1">
+                                        {{ $company->name }}
+                                    </span>
+                                @empty
+                                    N/A
+                                @endforelse
+                            </td>
                             <td class="text-end">
                                 <div class="btn-group btn-group-sm" role="group">
                                     <a href="{{ route('users.edit', $user->id) }}" class="btn btn-outline-github" title="Edit">

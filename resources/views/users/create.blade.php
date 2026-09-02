@@ -45,16 +45,20 @@
                         </div>
 
                         <div class="mb-3">
-                            <label for="company_id" class="form-label small fw-semibold">Company</label>
-                            <select id="company_id" name="company_id" class="form-select form-select-sm @error('company_id') is-invalid @enderror">
-                                <option value="">No company</option>
-                                @foreach($companies as $company)
-                                    <option value="{{ $company->company_id }}" {{ old('company_id') == $company->company_id ? 'selected' : '' }}>
-                                        {{ $company->name }}
-                                    </option>
-                                @endforeach
-                            </select>
-                            @error('company_id')
+                            <label class="form-label small fw-semibold">Companies</label>
+                            <div class="border rounded p-2" style="max-height: 160px; overflow-y: auto;">
+                                @forelse($companies as $company)
+                                    <div class="form-check">
+                                        <input type="checkbox" name="company_ids[]" value="{{ $company->company_id }}" id="company_{{ $company->company_id }}"
+                                               class="form-check-input" {{ in_array($company->company_id, old('company_ids', [])) ? 'checked' : '' }}>
+                                        <label for="company_{{ $company->company_id }}" class="form-check-label small">{{ $company->name }}</label>
+                                    </div>
+                                @empty
+                                    <span class="text-muted small">No companies exist yet.</span>
+                                @endforelse
+                            </div>
+                            <div class="form-text small">Check every company this user should be able to sell for. Leave all unchecked for no company access yet.</div>
+                            @error('company_ids')
                                 <div class="invalid-feedback d-block small">{{ $message }}</div>
                             @enderror
                         </div>

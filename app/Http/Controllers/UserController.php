@@ -13,7 +13,7 @@ class UserController extends Controller
 {
     public function index()
     {
-        $users = User::with('company')->orderBy('name')->get();
+        $users = User::with(['company', 'companies'])->orderBy('name')->get();
 
         return view('users.index', compact('users'));
     }
@@ -31,12 +31,20 @@ class UserController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users,email',
             'password' => 'required|string|min:8|confirmed',
-            'company_id' => 'nullable|exists:companies,company_id',
+            'company_ids' => 'nullable|array',
+            'company_ids.*' => 'exists:companies,company_id',
         ]);
 
-        $validated['password'] = Hash::make($validated['password']);
+        $companyIds = $validated['company_ids'] ?? [];
 
-        User::create($validated);
+        $user = User::create([
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'password' => Hash::make($validated['password']),
+            'company_id' => $companyIds[0] ?? null,
+        ]);
+
+        $user->companies()->sync($companyIds);
 
         return redirect()->route('users.index')->with('success', 'User created successfully.');
     }
@@ -44,6 +52,7 @@ class UserController extends Controller
     public function edit(User $user)
     {
         $companies = Company::all();
+        $user->load('companies');
 
         return view('users.edit', compact('user', 'companies'));
     }
@@ -54,8 +63,12 @@ class UserController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users,email,' . $user->id,
             'password' => 'nullable|string|min:8|confirmed',
-            'company_id' => 'nullable|exists:companies,company_id',
+            'company_ids' => 'nullable|array',
+            'company_ids.*' => 'exists:companies,company_id',
         ]);
+
+        $companyIds = $validated['company_ids'] ?? [];
+        unset($validated['company_ids']);
 
         if (! empty($validated['password'])) {
             $validated['password'] = Hash::make($validated['password']);
@@ -63,7 +76,13 @@ class UserController extends Controller
             unset($validated['password']);
         }
 
+        // Keep the user's currently active company if it's still among the
+        // granted ones, so editing their memberships doesn't silently kick
+        // them out of the company they're mid-session in.
+        $validated['company_id'] = in_array($user->company_id, $companyIds) ? $user->company_id : ($companyIds[0] ?? null);
+
         $user->update($validated);
+        $user->companies()->sync($companyIds);
 
         return redirect()->route('users.index')->with('success', 'User updated successfully.');
     }
