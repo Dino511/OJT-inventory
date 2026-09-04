@@ -8,6 +8,7 @@ use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rule;
 
 class UserController extends Controller
 {
@@ -31,6 +32,7 @@ class UserController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users,email',
             'password' => 'required|string|min:8|confirmed',
+            'role' => ['required', Rule::in([User::ROLE_SUPER_ADMIN, User::ROLE_BUSINESS_ADMIN, User::ROLE_MODERATOR])],
             'company_ids' => 'nullable|array',
             'company_ids.*' => 'exists:companies,company_id',
         ]);
@@ -41,6 +43,7 @@ class UserController extends Controller
             'name' => $validated['name'],
             'email' => $validated['email'],
             'password' => Hash::make($validated['password']),
+            'role' => $validated['role'],
             'company_id' => $companyIds[0] ?? null,
         ]);
 
@@ -63,9 +66,15 @@ class UserController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users,email,' . $user->id,
             'password' => 'nullable|string|min:8|confirmed',
+            'role' => ['required', Rule::in([User::ROLE_SUPER_ADMIN, User::ROLE_BUSINESS_ADMIN, User::ROLE_MODERATOR])],
             'company_ids' => 'nullable|array',
             'company_ids.*' => 'exists:companies,company_id',
         ]);
+
+        if ($user->id === Auth::id() && $validated['role'] !== User::ROLE_SUPER_ADMIN) {
+            return redirect()->route('users.index')
+                ->with('error', 'You cannot remove your own Super Admin role while signed in.');
+        }
 
         $companyIds = $validated['company_ids'] ?? [];
         unset($validated['company_ids']);
@@ -85,6 +94,18 @@ class UserController extends Controller
         $user->companies()->sync($companyIds);
 
         return redirect()->route('users.index')->with('success', 'User updated successfully.');
+    }
+
+    public function toggleStatus(User $user)
+    {
+        if ($user->id === Auth::id()) {
+            return redirect()->route('users.index')->with('error', 'You cannot deactivate your own account while signed in.');
+        }
+
+        $user->update(['is_active' => ! $user->is_active]);
+
+        return redirect()->route('users.index')
+            ->with('success', 'User ' . ($user->is_active ? 'activated' : 'deactivated') . ' successfully.');
     }
 
     public function destroy(User $user)

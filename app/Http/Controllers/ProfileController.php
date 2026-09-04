@@ -20,12 +20,14 @@ class ProfileController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users,email,' . $user->id,
+            'alternative_email' => ['nullable', 'string', 'email', 'max:255', 'different:email'],
             'current_password' => 'nullable|required_with:password|current_password',
             'password' => 'nullable|string|min:8|confirmed',
         ]);
 
         $user->name = $validated['name'];
         $user->email = $validated['email'];
+        $user->alternative_email = $validated['alternative_email'] ?? null;
 
         if (! empty($validated['password'])) {
             $user->password = Hash::make($validated['password']);

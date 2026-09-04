@@ -99,73 +99,85 @@
             <!-- Right: User / Settings -->
             @auth
                 <div class="d-flex align-items-center gap-3">
-                    <span class="text-light small d-none d-md-inline">
-                        <i class="bi bi-person-circle me-1 text-secondary"></i>
-                        {{ Auth::user()->name }}
-                    </span>
+                    <div class="d-flex align-items-center gap-2 d-none d-md-flex">
+                        @php
+                            $roleBadge = match(Auth::user()->role) {
+                                'super_admin' => ['bg-danger-subtle text-danger', 'Super Admin'],
+                                'business_admin' => ['bg-primary-subtle text-primary', 'Business Admin'],
+                                default => ['bg-secondary-subtle text-secondary', 'Moderator'],
+                            };
+                        @endphp
+                        <div class="rounded-circle bg-secondary-subtle border d-flex align-items-center justify-content-center flex-shrink-0" style="width:36px;height:36px;">
+                            <i class="bi bi-person-fill text-secondary fs-5"></i>
+                        </div>
+                        <div class="text-light small lh-sm">
+                            <div>{{ Auth::user()->name }}</div>
+                            <span class="badge {{ $roleBadge[0] }} border">{{ $roleBadge[1] }}</span>
+                        </div>
+                    </div>
 
                     <div class="dropdown">
                         <button class="btn btn-sm btn-outline-light px-2 py-1 dropdown-toggle {{ request()->routeIs('profile.*') ? 'active' : '' }}"
-                                type="button" data-bs-toggle="dropdown" aria-expanded="false" style="font-size: 0.8rem;">
-                            <i class="bi bi-gear-fill me-1"></i> {{ __('Settings') }}
+                                type="button" data-bs-toggle="dropdown" aria-expanded="false" title="{{ __('Settings') }}" aria-label="{{ __('Settings') }}">
+                            <i class="bi bi-gear-fill"></i>
                         </button>
                         <ul class="dropdown-menu dropdown-menu-end">
-                            <li>
-                                <a class="dropdown-item {{ request()->routeIs('profile.*') ? 'active' : '' }}" href="{{ route('profile.edit') }}">
-                                    <i class="bi bi-person-circle me-2"></i> {{ __('My Profile') }}
-                                </a>
-                            </li>
+                                    <li>
+                                        <a class="dropdown-item {{ request()->routeIs('profile.*') ? 'active' : '' }}" href="{{ route('profile.edit') }}">
+                                            <i class="bi bi-person-circle me-2"></i> {{ __('My Profile') }}
+                                        </a>
+                                    </li>
 
-                            <li><hr class="dropdown-divider"></li>
-                            <li><h6 class="dropdown-header">{{ __('Language') }}</h6></li>
-                            <li>
-                                <form action="{{ route('locale.set', 'en') }}" method="POST">
-                                    @csrf
-                                    <button type="submit" class="dropdown-item {{ app()->getLocale() === 'en' ? 'active' : '' }}">
-                                        <i class="bi bi-check-lg me-2 {{ app()->getLocale() === 'en' ? '' : 'invisible' }}"></i> {{ __('English') }}
-                                    </button>
-                                </form>
-                            </li>
-                            <li>
-                                <form action="{{ route('locale.set', 'tl') }}" method="POST">
-                                    @csrf
-                                    <button type="submit" class="dropdown-item {{ app()->getLocale() === 'tl' ? 'active' : '' }}">
-                                        <i class="bi bi-check-lg me-2 {{ app()->getLocale() === 'tl' ? '' : 'invisible' }}"></i> {{ __('Tagalog') }}
-                                    </button>
-                                </form>
-                            </li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><h6 class="dropdown-header">{{ __('Language') }}</h6></li>
+                                    <li>
+                                        <form action="{{ route('locale.set', 'en') }}" method="POST">
+                                            @csrf
+                                            <button type="submit" class="dropdown-item {{ app()->getLocale() === 'en' ? 'active' : '' }}">
+                                                <i class="bi bi-check-lg me-2 {{ app()->getLocale() === 'en' ? '' : 'invisible' }}"></i> {{ __('English') }}
+                                            </button>
+                                        </form>
+                                    </li>
+                                    <li>
+                                        <form action="{{ route('locale.set', 'tl') }}" method="POST">
+                                            @csrf
+                                            <button type="submit" class="dropdown-item {{ app()->getLocale() === 'tl' ? 'active' : '' }}">
+                                                <i class="bi bi-check-lg me-2 {{ app()->getLocale() === 'tl' ? '' : 'invisible' }}"></i> {{ __('Tagalog') }}
+                                            </button>
+                                        </form>
+                                    </li>
 
-                            <li><hr class="dropdown-divider"></li>
-                            <li><h6 class="dropdown-header">{{ __('Theme') }}</h6></li>
-                            <li>
-                                <button type="button" class="dropdown-item" data-theme-option="light">
-                                    <i class="bi bi-check-lg me-2 theme-check" data-theme-check="light"></i>
-                                    <i class="bi bi-sun me-1"></i> {{ __('Light') }}
-                                </button>
-                            </li>
-                            <li>
-                                <button type="button" class="dropdown-item" data-theme-option="dark">
-                                    <i class="bi bi-check-lg me-2 theme-check" data-theme-check="dark"></i>
-                                    <i class="bi bi-moon-stars me-1"></i> {{ __('Dark') }}
-                                </button>
-                            </li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><h6 class="dropdown-header">{{ __('Theme') }}</h6></li>
+                                    <li>
+                                        <button type="button" class="dropdown-item" data-theme-option="light">
+                                            <i class="bi bi-check-lg me-2 theme-check" data-theme-check="light"></i>
+                                            <i class="bi bi-sun me-1"></i> {{ __('Light') }}
+                                        </button>
+                                    </li>
+                                    <li>
+                                        <button type="button" class="dropdown-item" data-theme-option="dark">
+                                            <i class="bi bi-check-lg me-2 theme-check" data-theme-check="dark"></i>
+                                            <i class="bi bi-moon-stars me-1"></i> {{ __('Dark') }}
+                                        </button>
+                                    </li>
 
-                            <li><hr class="dropdown-divider"></li>
-                            <li>
-                                <button type="button" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#contactUsModal">
-                                    <i class="bi bi-envelope me-2"></i> {{ __('Contact Us') }}
-                                </button>
-                            </li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li>
+                                        <button type="button" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#contactUsModal">
+                                            <i class="bi bi-envelope me-2"></i> {{ __('Contact Us') }}
+                                        </button>
+                                    </li>
 
-                            <li><hr class="dropdown-divider"></li>
-                            <li>
-                                <form action="{{ route('logout') }}" method="POST">
-                                    @csrf
-                                    <button type="submit" class="dropdown-item text-danger">
-                                        <i class="bi bi-box-arrow-right me-2"></i> {{ __('Sign out') }}
-                                    </button>
-                                </form>
-                            </li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li>
+                                        <form action="{{ route('logout') }}" method="POST">
+                                            @csrf
+                                            <button type="submit" class="dropdown-item text-danger">
+                                                <i class="bi bi-box-arrow-right me-2"></i> {{ __('Sign out') }}
+                                            </button>
+                                        </form>
+                                    </li>
                         </ul>
                     </div>
                 </div>
@@ -241,11 +253,13 @@
                             <i class="bi bi-shield-lock me-1"></i> {{ __('Admin') }}
                         </a>
                         <ul class="dropdown-menu">
-                            <li>
-                                <a class="dropdown-item {{ request()->routeIs('users.*') ? 'active' : '' }}" href="{{ route('users.index') }}">
-                                    <i class="bi bi-people me-2"></i> {{ __('Users') }}
-                                </a>
-                            </li>
+                            @if(auth()->user()->isSuperAdmin())
+                                <li>
+                                    <a class="dropdown-item {{ request()->routeIs('users.*') ? 'active' : '' }}" href="{{ route('users.index') }}">
+                                        <i class="bi bi-people me-2"></i> {{ __('Users') }}
+                                    </a>
+                                </li>
+                            @endif
                             <li>
                                 <a class="dropdown-item {{ request()->routeIs('activity-log.*') ? 'active' : '' }}" href="{{ route('activity-log.index') }}">
                                     <i class="bi bi-clock-history me-2"></i> {{ __('History') }}

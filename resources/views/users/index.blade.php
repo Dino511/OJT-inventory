@@ -28,8 +28,10 @@
                         <th scope="col" style="width: 80px;">ID</th>
                         <th scope="col">NAME</th>
                         <th scope="col">EMAIL</th>
+                        <th scope="col">ROLE</th>
+                        <th scope="col">STATUS</th>
                         <th scope="col">COMPANIES</th>
-                        <th scope="col" class="text-end" style="width: 140px;">ACTIONS</th>
+                        <th scope="col" class="text-end" style="width: 180px;">ACTIONS</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -47,6 +49,23 @@
                                 </div>
                             </td>
                             <td class="text-secondary small">{{ $user->email }}</td>
+                            <td>
+                                @php
+                                    $roleBadge = match($user->role) {
+                                        'super_admin' => ['bg-danger-subtle text-danger', 'Super Admin'],
+                                        'business_admin' => ['bg-primary-subtle text-primary', 'Business Admin'],
+                                        default => ['bg-secondary-subtle text-secondary', 'Moderator'],
+                                    };
+                                @endphp
+                                <span class="badge {{ $roleBadge[0] }} border">{{ $roleBadge[1] }}</span>
+                            </td>
+                            <td>
+                                @if($user->is_active)
+                                    <span class="badge bg-success-subtle text-success border">Active</span>
+                                @else
+                                    <span class="badge bg-danger-subtle text-danger border">Inactive</span>
+                                @endif
+                            </td>
                             <td class="text-secondary small">
                                 @forelse($user->companies as $company)
                                     <span class="badge {{ $company->company_id == $user->company_id ? 'bg-success-subtle text-success' : 'bg-light text-secondary' }} border me-1">
@@ -58,6 +77,14 @@
                             </td>
                             <td class="text-end">
                                 <div class="btn-group btn-group-sm" role="group">
+                                    <form action="{{ route('users.toggle-status', $user->id) }}" method="POST" class="d-inline" onsubmit="return confirm('{{ $user->is_active ? 'Deactivate' : 'Activate' }} this user?');">
+                                        @csrf
+                                        @method('PATCH')
+                                        <button type="submit" class="btn {{ $user->is_active ? 'btn-outline-warning' : 'btn-outline-success' }}"
+                                                title="{{ $user->is_active ? 'Deactivate' : 'Activate' }}" {{ $user->id === auth()->id() ? 'disabled' : '' }}>
+                                            <i class="bi {{ $user->is_active ? 'bi-toggle-on' : 'bi-toggle-off' }}"></i>
+                                        </button>
+                                    </form>
                                     <a href="{{ route('users.edit', $user->id) }}" class="btn btn-outline-github" title="Edit">
                                         <i class="bi bi-pencil"></i>
                                     </a>
@@ -73,7 +100,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="5" class="text-center py-5 text-muted">
+                            <td colspan="7" class="text-center py-5 text-muted">
                                 <i class="bi bi-people fs-2 d-block mb-2 text-secondary"></i>
                                 No users found.
                             </td>

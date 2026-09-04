@@ -14,6 +14,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ActivityLogController;
 use App\Http\Controllers\LocaleController;
 use App\Http\Controllers\ReportController;
+use App\Http\Controllers\PasswordResetController;
 
 // Guest Routes (Accessible only when NOT logged in)
 Route::middleware('guest')->group(function () {
@@ -21,6 +22,11 @@ Route::middleware('guest')->group(function () {
     Route::post('/login', [AuthController::class, 'login']);
     Route::get('/register', [AuthController::class, 'showRegister'])->name('register');
     Route::post('/register', [AuthController::class, 'register']);
+
+    Route::get('/forgot-password', [PasswordResetController::class, 'showForgotForm'])->name('password.request');
+    Route::post('/forgot-password', [PasswordResetController::class, 'sendCode'])->middleware('throttle:6,1')->name('password.email');
+    Route::get('/reset-password', [PasswordResetController::class, 'showResetForm'])->name('password.reset.form');
+    Route::post('/reset-password', [PasswordResetController::class, 'resetPassword'])->middleware('throttle:6,1')->name('password.update');
 });
 
 // Authenticated Protected Routes (Requires Login)
@@ -47,7 +53,11 @@ Route::middleware('auth')->group(function () {
     Route::resource('locations', LocationController::class);
     Route::resource('base-units', UnitOfMeasureController::class);
     Route::resource('unit-conversions', UnitConversionController::class);
-    Route::resource('users', UserController::class);
+
+    Route::middleware('role:super_admin')->group(function () {
+        Route::resource('users', UserController::class);
+        Route::patch('/users/{user}/toggle-status', [UserController::class, 'toggleStatus'])->name('users.toggle-status');
+    });
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');

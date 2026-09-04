@@ -46,6 +46,24 @@
                         </div>
 
                         <div class="mb-3">
+                            <label for="role" class="form-label small fw-semibold">Role</label>
+                            <select id="role" name="role" class="form-select form-select-sm @error('role') is-invalid @enderror" required {{ $user->id === auth()->id() ? 'disabled' : '' }}>
+                                <option value="super_admin" {{ old('role', $user->role) === 'super_admin' ? 'selected' : '' }}>Super Admin</option>
+                                <option value="business_admin" {{ old('role', $user->role) === 'business_admin' ? 'selected' : '' }}>Business Admin</option>
+                                <option value="moderator" {{ old('role', $user->role) === 'moderator' ? 'selected' : '' }}>Moderator</option>
+                            </select>
+                            @if($user->id === auth()->id())
+                                <input type="hidden" name="role" value="{{ $user->role }}">
+                                <div class="form-text small">You cannot change your own role while signed in.</div>
+                            @else
+                                <div class="form-text small">Super Admin: full access to both systems. Business Admin: everything except Users management. Moderator: POS only.</div>
+                            @endif
+                            @error('role')
+                                <div class="invalid-feedback d-block small">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <div class="mb-3">
                             <label class="form-label small fw-semibold">Companies</label>
                             @php $selectedCompanyIds = old('company_ids', $user->companies->pluck('company_id')->all()); @endphp
                             <div class="border rounded p-2" style="max-height: 160px; overflow-y: auto;">

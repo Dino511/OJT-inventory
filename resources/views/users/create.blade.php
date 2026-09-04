@@ -45,6 +45,20 @@
                         </div>
 
                         <div class="mb-3">
+                            <label for="role" class="form-label small fw-semibold">Role</label>
+                            <select id="role" name="role" class="form-select form-select-sm @error('role') is-invalid @enderror" required>
+                                <option value="" disabled {{ old('role') ? '' : 'selected' }}>Select a role</option>
+                                <option value="super_admin" {{ old('role') === 'super_admin' ? 'selected' : '' }}>Super Admin</option>
+                                <option value="business_admin" {{ old('role') === 'business_admin' ? 'selected' : '' }}>Business Admin</option>
+                                <option value="moderator" {{ old('role') === 'moderator' ? 'selected' : '' }}>Moderator</option>
+                            </select>
+                            <div class="form-text small">Super Admin: full access to both systems. Business Admin: everything except Users management. Moderator: POS only.</div>
+                            @error('role')
+                                <div class="invalid-feedback d-block small">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <div class="mb-3">
                             <label class="form-label small fw-semibold">Companies</label>
                             <div class="border rounded p-2" style="max-height: 160px; overflow-y: auto;">
                                 @forelse($companies as $company)

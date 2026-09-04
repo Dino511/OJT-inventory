@@ -40,6 +40,30 @@
                             @enderror
                         </div>
 
+                        <div class="mb-3">
+                            <label for="alternative_email" class="form-label small fw-semibold">Alternative Email <span class="text-muted fw-normal">(optional)</span></label>
+                            <input type="email" id="alternative_email" name="alternative_email"
+                                   class="form-control form-control-sm @error('alternative_email') is-invalid @enderror"
+                                   value="{{ old('alternative_email', $user->alternative_email) }}">
+                            <div class="form-text small">Password reset codes are sent here instead of your primary email, if set.</div>
+                            @error('alternative_email')
+                                <div class="invalid-feedback d-block small">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label small fw-semibold">Role</label>
+                            @php
+                                $roleLabel = match($user->role) {
+                                    'super_admin' => 'Super Admin — full access to both systems',
+                                    'business_admin' => 'Business Admin — everything except Users management',
+                                    default => 'Moderator — POS only',
+                                };
+                            @endphp
+                            <input type="text" class="form-control form-control-sm" value="{{ $roleLabel }}" disabled>
+                            <div class="form-text small">Only a Super Admin can change your role, from the Users page.</div>
+                        </div>
+
                         <hr class="my-3">
                         <p class="text-muted small mb-2">Leave the password fields blank to keep your current password.</p>
 
