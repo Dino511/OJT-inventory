@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Models\UnitConversion;
 use App\Models\UnitOfMeasure;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
 
 class UnitConversionController extends Controller
 {
@@ -34,13 +33,11 @@ class UnitConversionController extends Controller
                 'required',
                 'exists:base_units,id',
                 'different:to_unit_id',
-                Rule::unique('unit_conversions', 'from_unit_id')->where(fn ($query) => $query->where('to_unit_id', $request->to_unit_id)),
             ],
             'to_unit_id' => 'required|exists:base_units,id',
             'factor' => 'required|numeric|gt:0',
         ], [
             'from_unit_id.different' => 'The two units must be different.',
-            'from_unit_id.unique' => 'A conversion between these two units already exists. Edit that one instead.',
         ]);
 
         UnitConversion::create($validated);
@@ -74,15 +71,11 @@ class UnitConversionController extends Controller
                 'required',
                 'exists:base_units,id',
                 'different:to_unit_id',
-                Rule::unique('unit_conversions', 'from_unit_id')
-                    ->where(fn ($query) => $query->where('to_unit_id', $request->to_unit_id))
-                    ->ignore($unit_conversion->id),
             ],
             'to_unit_id' => 'required|exists:base_units,id',
             'factor' => 'required|numeric|gt:0',
         ], [
             'from_unit_id.different' => 'The two units must be different.',
-            'from_unit_id.unique' => 'A conversion between these two units already exists. Edit that one instead.',
         ]);
 
         $unit_conversion->update($validated);

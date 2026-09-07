@@ -10,6 +10,8 @@ use App\Models\ProductActivityLog;
 use App\Models\UnitConversion;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
 
 class ProductController extends Controller
 {
@@ -44,10 +46,9 @@ class ProductController extends Controller
                 break;
         }
 
-        $products = $query->get();
-        $conversions = UnitConversion::with('toUnit')->get()->keyBy('from_unit_id');
+        $products = $query->with('unitConversions.toUnit')->get();
 
-        return view('products.index', compact('products', 'sort', 'direction', 'conversions'));
+        return view('products.index', compact('products', 'sort', 'direction'));
     }
 
     /**
@@ -58,8 +59,27 @@ class ProductController extends Controller
         $companies = Company::all();
         $categories = ProductCategory::all();
         $baseUnits = BaseUnit::all();
+        $conversionOptions = $this->conversionOptions();
 
-        return view('products.create', compact('companies', 'categories', 'baseUnits'));
+        return view('products.create', compact('companies', 'categories', 'baseUnits', 'conversionOptions'));
+    }
+
+    /**
+     * Every unit conversion, pre-shaped into a plain array for the create/
+     * edit forms' JS picker — built here rather than inline in an @json()
+     * Blade call, since a closure inside that directive's argument confuses
+     * Blade's bracket-balance pre-check.
+     */
+    private function conversionOptions(): array
+    {
+        return UnitConversion::with(['fromUnit', 'toUnit'])->get()
+            ->map(fn ($c) => [
+                'id' => $c->id,
+                'from_unit_id' => (int) $c->from_unit_id,
+                'label' => '1 ' . ($c->fromUnit->name ?? '?') . ' = ' . (float) $c->factor . ' ' . ($c->toUnit->name ?? '?'),
+            ])
+            ->values()
+            ->all();
     }
 
     /**
@@ -76,11 +96,25 @@ class ProductController extends Controller
             'unit_value'    => 'required|numeric|min:0',
             'base_unit_id' => 'required|exists:base_units,id',
             'reorder_point' => 'nullable|numeric|min:0',
-            'selling_price' => 'nullable|numeric|min:0',
+            'selling_price' => 'required|numeric|min:0',
             'cost' => 'nullable|numeric|min:0',
+            'photo' => 'nullable|image|max:4096',
+            'unit_conversion_ids' => 'nullable|array',
+            'unit_conversion_ids.*' => [
+                'integer',
+                Rule::exists('unit_conversions', 'id')->where('from_unit_id', $request->input('base_unit_id')),
+            ],
         ]);
 
-        Product::create($validated);
+        $conversionIds = $validated['unit_conversion_ids'] ?? [];
+        unset($validated['unit_conversion_ids']);
+
+        if ($request->hasFile('photo')) {
+            $validated['photo'] = $request->file('photo')->store('products', 'public');
+        }
+
+        $product = Product::create($validated);
+        $product->unitConversions()->sync($conversionIds);
 
         return redirect()->route('products.index')->with('success', 'Product created successfully.');
     }
@@ -90,6 +124,8 @@ class ProductController extends Controller
      */
     public function show(Product $product)
     {
+        $product->load(['company', 'category', 'baseUnit', 'inventories.location', 'unitConversions.toUnit']);
+
         return view('products.show', compact('product'));
     }
 
@@ -101,8 +137,10 @@ class ProductController extends Controller
         $companies = Company::all();
         $categories = ProductCategory::all();
         $baseUnits = BaseUnit::all();
+        $conversionOptions = $this->conversionOptions();
+        $selectedConversionIds = $product->unitConversions->pluck('id')->all();
 
-        return view('products.edit', compact('product', 'companies', 'categories', 'baseUnits'));
+        return view('products.edit', compact('product', 'companies', 'categories', 'baseUnits', 'conversionOptions', 'selectedConversionIds'));
     }
 
     /**
@@ -119,13 +157,53 @@ class ProductController extends Controller
             'unit_value'    => 'required|numeric|min:0',
             'base_unit_id' => 'required|exists:base_units,id',
             'reorder_point' => 'nullable|numeric|min:0',
-            'selling_price' => 'nullable|numeric|min:0',
+            'selling_price' => 'required|numeric|min:0',
             'cost' => 'nullable|numeric|min:0',
+            'photo' => 'nullable|image|max:4096',
+            'remove_photo' => 'nullable|boolean',
+            'unit_conversion_ids' => 'nullable|array',
+            'unit_conversion_ids.*' => [
+                'integer',
+                Rule::exists('unit_conversions', 'id')->where('from_unit_id', $request->input('base_unit_id')),
+            ],
         ]);
 
+        $conversionIds = $validated['unit_conversion_ids'] ?? [];
+        unset($validated['unit_conversion_ids']);
+
+        $removePhoto = ! empty($validated['remove_photo']);
+        unset($validated['remove_photo']);
+
+        if ($request->hasFile('photo')) {
+            if ($product->photo) {
+                Storage::disk('public')->delete($product->photo);
+            }
+            $validated['photo'] = $request->file('photo')->store('products', 'public');
+        } elseif ($removePhoto) {
+            if ($product->photo) {
+                Storage::disk('public')->delete($product->photo);
+            }
+            $validated['photo'] = null;
+        }
+
         $product->update($validated);
+        $product->unitConversions()->sync($conversionIds);
 
         return redirect()->route('products.index')->with('success', 'Product updated successfully.');
+    }
+
+    /**
+     * Toggle a product between active and inactive. Inactive products are
+     * hidden from the "add new stock" pickers (Inventory create/edit,
+     * Transfer's "Add Another Product") but stay visible here and keep
+     * their existing stock records untouched.
+     */
+    public function toggleStatus(Product $product)
+    {
+        $product->update(['is_active' => ! $product->is_active]);
+
+        return redirect()->route('products.index')
+            ->with('success', 'Product ' . ($product->is_active ? 'activated' : 'deactivated') . ' successfully.');
     }
 
     /**
@@ -134,7 +212,13 @@ class ProductController extends Controller
     public function destroy(Product $product)
     {
         try {
+            $photo = $product->photo;
+
             $product->delete();
+
+            if ($photo) {
+                Storage::disk('public')->delete($photo);
+            }
 
             return redirect()->route('products.index')->with('success', 'Product deleted successfully.');
         } catch (QueryException $e) {

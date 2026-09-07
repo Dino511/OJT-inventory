@@ -186,10 +186,45 @@ class ActivityLogController extends Controller
             return $summary;
         }
 
+        if ($log->action === 'purchase_received') {
+            $c = $log->changes;
+
+            return "Received {$c['quantity']} unit(s) from {$c['supplier']} (Purchase Order #{$c['purchase_order_id']})."
+                . " {$log->subject_name}: {$c['destination_quantity_before']} -> {$c['destination_quantity_after']}.";
+        }
+
+        if (in_array($log->action, ['transfer_dispatched', 'transfer_received', 'transfer_cancelled'], true)) {
+            $c = $log->changes;
+            $verb = match ($log->action) {
+                'transfer_dispatched' => 'Dispatched',
+                'transfer_received' => 'Received',
+                'transfer_cancelled' => 'Cancelled — returned',
+            };
+            $summary = "{$verb} {$c['quantity']} unit(s) (Transfer #{$c['stock_transfer_id']}).";
+
+            if (array_key_exists('source_quantity_before', $c)) {
+                $summary .= " {$log->subject_name}: {$c['source_quantity_before']} -> {$c['source_quantity_after']}.";
+            } elseif (array_key_exists('destination_quantity_before', $c)) {
+                $summary .= " {$log->subject_name}: {$c['destination_quantity_before']} -> {$c['destination_quantity_after']}.";
+            }
+
+            return $summary;
+        }
+
+        // Generic fallback: a plain {old, new} diff — used by created/updated
+        // logs on Companies, Categories, Locations, and Products. Any value
+        // that isn't itself an {old, new} pair (a scalar, or a differently
+        // shaped array from an action type not handled above) is shown as-is
+        // rather than indexed into, which would error on a scalar.
         $parts = [];
         foreach ($log->changes as $field => $values) {
             $fieldLabel = ucwords(str_replace('_', ' ', $field));
-            $parts[] = "{$fieldLabel}: {$values['old']} -> {$values['new']}";
+
+            if (is_array($values) && array_key_exists('old', $values) && array_key_exists('new', $values)) {
+                $parts[] = "{$fieldLabel}: {$values['old']} -> {$values['new']}";
+            } else {
+                $parts[] = "{$fieldLabel}: " . (is_scalar($values) ? $values : json_encode($values));
+            }
         }
 
         return implode('; ', $parts);

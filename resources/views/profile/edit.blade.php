@@ -16,9 +16,38 @@
                     <span class="fw-semibold text-secondary small">ACCOUNT DETAILS</span>
                 </div>
                 <div class="card-body p-4">
-                    <form action="{{ route('profile.update') }}" method="POST">
+                    <form action="{{ route('profile.update') }}" method="POST" enctype="multipart/form-data">
                         @csrf
                         @method('PUT')
+
+                        <div class="mb-4 text-center">
+                            @if($user->avatar)
+                                <img id="currentAvatar" src="{{ $user->avatar_url }}" alt="{{ $user->name }}" class="rounded-circle border" style="width: 96px; height: 96px; object-fit: cover;">
+                            @else
+                                <div id="currentAvatar" class="rounded-circle bg-secondary-subtle border d-flex align-items-center justify-content-center mx-auto" style="width: 96px; height: 96px;">
+                                    <i class="bi bi-person-fill text-secondary" style="font-size: 2.5rem;"></i>
+                                </div>
+                            @endif
+                            <img id="avatarPreview" src="" alt="Preview" class="rounded-circle border d-none mx-auto mt-2" style="width: 96px; height: 96px; object-fit: cover;">
+
+                            <div class="mt-2">
+                                <label for="avatar" class="btn btn-outline-github btn-sm">
+                                    <i class="bi bi-camera me-1"></i> Change Photo
+                                </label>
+                                <input type="file" id="avatar" name="avatar" accept="image/*" class="d-none @error('avatar') is-invalid @enderror">
+
+                                @if($user->avatar)
+                                    <div class="form-check d-inline-block ms-2">
+                                        <input type="checkbox" class="form-check-input" id="remove_avatar" name="remove_avatar" value="1">
+                                        <label class="form-check-label small text-danger" for="remove_avatar">Remove photo</label>
+                                    </div>
+                                @endif
+                            </div>
+                            <div class="form-text small">JPG, PNG, or WebP, up to 4MB.</div>
+                            @error('avatar')
+                                <div class="invalid-feedback d-block small">{{ $message }}</div>
+                            @enderror
+                        </div>
 
                         <div class="mb-3">
                             <label for="name" class="form-label small fw-semibold">Full Name</label>
@@ -103,4 +132,25 @@
             </div>
         </div>
     </div>
+
+    <script>
+        const avatarInput = document.getElementById('avatar');
+        const avatarPreview = document.getElementById('avatarPreview');
+        const currentAvatar = document.getElementById('currentAvatar');
+        const removeAvatarCheckbox = document.getElementById('remove_avatar');
+
+        avatarInput?.addEventListener('change', function () {
+            const file = this.files[0];
+            if (!file) {
+                avatarPreview.classList.add('d-none');
+                avatarPreview.src = '';
+                return;
+            }
+            avatarPreview.src = URL.createObjectURL(file);
+            avatarPreview.classList.remove('d-none');
+            currentAvatar?.classList.add('d-none');
+            // Choosing a new photo supersedes "remove photo".
+            if (removeAvatarCheckbox) removeAvatarCheckbox.checked = false;
+        });
+    </script>
 @endsection

@@ -45,6 +45,7 @@
             <table class="table table-hover align-middle mb-0" id="productsTable">
                 <thead>
                     <tr>
+                        <th scope="col" style="width: 60px;"></th>
                         <th scope="col" style="width: 120px;">SKU</th>
                         @php
                             $sortLink = fn (string $column) => route('products.index', [
@@ -73,19 +74,31 @@
                         </th>
                         <th scope="col">BASE UNIT</th>
                         <th scope="col">REORDER POINT</th>
-                        <th scope="col" class="text-end" style="width: 160px;">ACTIONS</th>
+                        <th scope="col">STATUS</th>
+                        <th scope="col" class="text-end" style="width: 200px;">ACTIONS</th>
                     </tr>
                 </thead>
                 <tbody>
                     @forelse($products as $product)
                         <tr>
                             <td>
+                                <a href="{{ route('products.show', $product->id) }}">
+                                    @if($product->photo)
+                                        <img src="{{ $product->photo_url }}" alt="{{ $product->name }}" class="rounded border" style="width: 40px; height: 40px; object-fit: cover;">
+                                    @else
+                                        <div class="d-flex align-items-center justify-content-center rounded border bg-light text-muted" style="width: 40px; height: 40px;">
+                                            <i class="bi bi-image"></i>
+                                        </div>
+                                    @endif
+                                </a>
+                            </td>
+                            <td>
                                 <span class="badge bg-light text-secondary border font-monospace">
                                     {{ $product->code ?? 'N/A' }}
                                 </span>
                             </td>
                             <td>
-                                <div class="fw-semibold text-dark">{{ $product->name }}</div>
+                                <a href="{{ route('products.show', $product->id) }}" class="fw-semibold text-dark text-decoration-none">{{ $product->name }}</a>
                             </td>
                             <td class="text-secondary small">
                                 @if($product->description)
@@ -115,36 +128,53 @@
                             <td class="text-secondary small">
                                 <span class="fw-semibold text-dark">{{ $product->unit_value ?? 1 }}</span>
                                 {{ $product->baseUnit->name ?? 'Piece' }}
-                                @if($conversion = $conversions->get($product->base_unit_id))
+                                @foreach($product->unitConversions as $conversion)
                                     <div class="text-muted" style="font-size: 0.75rem;">
                                         = {{ (float) $conversion->factor * ($product->unit_value ?? 1) }} {{ $conversion->toUnit->name ?? '' }}
                                     </div>
-                                @endif
+                                @endforeach
                             </td>
                             <td class="text-secondary small">
                                 {{ number_format($product->reorder_point ?? 0, 2) }}
                             </td>
+                            <td>
+                                @if($product->is_active)
+                                    <span class="badge bg-success-subtle text-success border">Active</span>
+                                @else
+                                    <span class="badge bg-danger-subtle text-danger border">Inactive</span>
+                                @endif
+                            </td>
                             <td class="text-end">
                                 <div class="btn-group btn-group-sm" role="group">
+                                    <form action="{{ route('products.toggle-status', $product->id) }}" method="POST" class="d-inline" onsubmit="return confirm('{{ $product->is_active ? 'Deactivate' : 'Activate' }} this product?');">
+                                        @csrf
+                                        @method('PATCH')
+                                        <button type="submit" class="btn {{ $product->is_active ? 'btn-outline-warning' : 'btn-outline-success' }}"
+                                                title="{{ $product->is_active ? 'Deactivate' : 'Activate' }}">
+                                            <i class="bi {{ $product->is_active ? 'bi-toggle-on' : 'bi-toggle-off' }}"></i>
+                                        </button>
+                                    </form>
                                     <a href="{{ route('products.history', $product->id) }}" class="btn btn-outline-github" title="History">
                                         <i class="bi bi-clock-history"></i>
                                     </a>
                                     <a href="{{ route('products.edit', $product->id) }}" class="btn btn-outline-github" title="Edit">
                                         <i class="bi bi-pencil"></i>
                                     </a>
-                                    <form action="{{ route('products.destroy', $product->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this product?');">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="btn btn-outline-danger" title="Delete">
-                                            <i class="bi bi-trash"></i>
-                                        </button>
-                                    </form>
+                                    @if(auth()->user()->isSuperAdmin())
+                                        <form action="{{ route('products.destroy', $product->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this product?');">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="btn btn-outline-danger" title="Delete">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </form>
+                                    @endif
                                 </div>
                             </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="8" class="text-center py-5 text-muted">
+                            <td colspan="10" class="text-center py-5 text-muted">
                                 <i class="bi bi-inbox fs-2 d-block mb-2 text-secondary"></i>
                                 No products found. Click <strong>New Product</strong> to get started.
                             </td>

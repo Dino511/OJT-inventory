@@ -30,8 +30,8 @@
                             <select id="product_id" name="product_id" class="form-select form-select-sm @error('product_id') is-invalid @enderror" required>
                                 <option value="">Select a product...</option>
                                 @foreach($products as $product)
-                                    <option value="{{ $product->id }}" {{ old('product_id') == $product->id ? 'selected' : '' }}>
-                                        {{ $product->name }} {{ $product->sku ? '('.$product->sku.')' : '' }}
+                                    <option value="{{ $product->id }}" data-unit="{{ $product->baseUnit->name ?? '' }}" {{ old('product_id') == $product->id ? 'selected' : '' }}>
+                                        {{ $product->name }} {{ $product->code ? '('.$product->code.')' : '' }}
                                     </option>
                                 @endforeach
                             </select>
@@ -58,7 +58,9 @@
 
                         <!-- Quantity -->
                         <div class="mb-3">
-                            <label for="quantity" class="form-label small fw-semibold">Quantity</label>
+                            <label for="quantity" class="form-label small fw-semibold">
+                                Quantity <span id="quantityUnitLabel" class="text-secondary fw-normal"></span>
+                            </label>
                             <input type="number"
                                    id="quantity"
                                    name="quantity"
@@ -86,3 +88,18 @@
         </div>
     </div>
 @endsection
+
+@push('scripts')
+    <script>
+        const productSelect = document.getElementById('product_id');
+        const quantityUnitLabel = document.getElementById('quantityUnitLabel');
+
+        function syncQuantityUnitLabel() {
+            const unit = productSelect.selectedOptions[0]?.dataset.unit || '';
+            quantityUnitLabel.textContent = unit ? `(${unit})` : '';
+        }
+
+        productSelect.addEventListener('change', syncQuantityUnitLabel);
+        syncQuantityUnitLabel();
+    </script>
+@endpush

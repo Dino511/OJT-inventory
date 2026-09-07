@@ -31,6 +31,7 @@
                         <th scope="col">ROLE</th>
                         <th scope="col">STATUS</th>
                         <th scope="col">COMPANIES</th>
+                        <th scope="col">LOCATION</th>
                         <th scope="col" class="text-end" style="width: 180px;">ACTIONS</th>
                     </tr>
                 </thead>
@@ -75,6 +76,17 @@
                                     N/A
                                 @endforelse
                             </td>
+                            <td class="text-secondary small">
+                                @if($user->isModerator())
+                                    @if($user->location)
+                                        <span class="badge bg-success-subtle text-success border">{{ $user->location->name }}</span>
+                                    @else
+                                        <span class="badge bg-warning-subtle text-warning border">Not assigned</span>
+                                    @endif
+                                @else
+                                    <span class="text-muted">&mdash;</span>
+                                @endif
+                            </td>
                             <td class="text-end">
                                 <div class="btn-group btn-group-sm" role="group">
                                     <form action="{{ route('users.toggle-status', $user->id) }}" method="POST" class="d-inline" onsubmit="return confirm('{{ $user->is_active ? 'Deactivate' : 'Activate' }} this user?');">
@@ -100,7 +112,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="7" class="text-center py-5 text-muted">
+                            <td colspan="8" class="text-center py-5 text-muted">
                                 <i class="bi bi-people fs-2 d-block mb-2 text-secondary"></i>
                                 No users found.
                             </td>

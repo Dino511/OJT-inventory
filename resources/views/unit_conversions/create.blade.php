@@ -90,3 +90,33 @@
         </div>
     </div>
 @endsection
+
+@push('scripts')
+    <script>
+        const fromUnitSelect = document.getElementById('from_unit_id');
+        const toUnitSelect = document.getElementById('to_unit_id');
+
+        // A unit can't be converted into itself — disable whichever one is
+        // already picked in the opposite dropdown, instead of letting the
+        // user submit and only find out from a validation error.
+        function syncUnitOptions() {
+            Array.from(toUnitSelect.options).forEach(opt => {
+                opt.disabled = opt.value !== '' && opt.value === fromUnitSelect.value;
+            });
+            if (toUnitSelect.value === fromUnitSelect.value) {
+                toUnitSelect.value = '';
+            }
+
+            Array.from(fromUnitSelect.options).forEach(opt => {
+                opt.disabled = opt.value !== '' && opt.value === toUnitSelect.value;
+            });
+            if (fromUnitSelect.value === toUnitSelect.value) {
+                fromUnitSelect.value = '';
+            }
+        }
+
+        fromUnitSelect.addEventListener('change', syncUnitOptions);
+        toUnitSelect.addEventListener('change', syncUnitOptions);
+        syncUnitOptions();
+    </script>
+@endpush

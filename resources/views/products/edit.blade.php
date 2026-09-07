@@ -14,110 +14,139 @@
         <h3 class="fw-bold mb-0">Edit Product</h3>
     </div>
 
-    <div class="row">
-        <div class="col-md-8 col-lg-6">
-            <div class="card shadow-sm">
-                <div class="card-header p-3">
-                    <span class="fw-semibold text-secondary small">EDIT PRODUCT DETAILS</span>
-                </div>
-                <div class="card-body p-4">
-                    <form action="{{ route('products.update', $product->id) }}" method="POST">
-                        @csrf
-                        @method('PUT')
+    <div class="card shadow-sm">
+        <div class="card-header p-3">
+            <span class="fw-semibold text-secondary small">EDIT PRODUCT DETAILS</span>
+        </div>
+        <div class="card-body p-4">
+            <form action="{{ route('products.update', $product->id) }}" method="POST" enctype="multipart/form-data">
+                @csrf
+                @method('PUT')
 
-                        <!-- Company Selection -->
-                        <div class="mb-3">
-                            <label for="company_id" class="form-label small fw-semibold">Company</label>
-                            <select id="company_id" 
-                                    name="company_id" 
-                                    class="form-select form-select-sm @error('company_id') is-invalid @enderror" 
-                                    required>
-                                <option value="" disabled>Select a Company</option>
-                                @foreach($companies as $company)
-                                    <option value="{{ $company->company_id }}" {{ old('company_id', $product->company_id) == $company->company_id ? 'selected' : '' }}>
-                                        {{ $company->name }}
-                                    </option>
-                                @endforeach
-                            </select>
-                            @error('company_id')
-                                <div class="invalid-feedback d-block small">{{ $message }}</div>
-                            @enderror
+                <div class="row">
+                    <!-- Left column: identity -->
+                    <div class="col-lg-6">
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="company_id" class="form-label small fw-semibold">Company</label>
+                                <select id="company_id"
+                                        name="company_id"
+                                        class="form-select form-select-sm @error('company_id') is-invalid @enderror"
+                                        required>
+                                    <option value="" disabled>Select a Company</option>
+                                    @foreach($companies as $company)
+                                        <option value="{{ $company->company_id }}" {{ old('company_id', $product->company_id) == $company->company_id ? 'selected' : '' }}>
+                                            {{ $company->name }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                @error('company_id')
+                                    <div class="invalid-feedback d-block small">{{ $message }}</div>
+                                @enderror
+                            </div>
+
+                            <div class="col-md-6">
+                                <label for="category_id" class="form-label small fw-semibold">Category</label>
+                                <select id="category_id"
+                                        name="category_id"
+                                        class="form-select form-select-sm @error('category_id') is-invalid @enderror"
+                                        required>
+                                    <option value="" disabled {{ old('category_id', $product->category_id ?? '') === '' ? 'selected' : '' }}>Select a Category</option>
+                                    @foreach($categories as $category)
+                                        <option value="{{ $category->id }}" {{ old('category_id', $product->category_id ?? '') == $category->id ? 'selected' : '' }}>
+                                            {{ $category->name }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                @error('category_id')
+                                    <div class="invalid-feedback d-block small">{{ $message }}</div>
+                                @enderror
+                            </div>
                         </div>
 
-                        <!-- Category Selection -->
-                        <div class="mb-3">
-    <label for="category_id" class="form-label small fw-semibold">Category</label>
-    <select id="category_id" 
-            name="category_id" 
-            class="form-select form-select-sm @error('category_id') is-invalid @enderror" 
-            required>
-        <option value="" disabled {{ old('category_id', $product->category_id ?? '') === '' ? 'selected' : '' }}>Select a Category</option>
-        @foreach($categories as $category)
-            <option value="{{ $category->id }}" {{ old('category_id', $product->category_id ?? '') == $category->id ? 'selected' : '' }}>
-                {{ $category->name }}
-            </option>
-        @endforeach
-    </select>
-    @error('category_id')
-        <div class="invalid-feedback d-block small">{{ $message }}</div>
-    @enderror
-</div>
+                        <div class="row mb-3">
+                            <div class="col-md-8">
+                                <label for="name" class="form-label small fw-semibold">Product Name</label>
+                                <input type="text"
+                                       id="name"
+                                       name="name"
+                                       class="form-control form-control-sm @error('name') is-invalid @enderror"
+                                       value="{{ old('name', $product->name) }}"
+                                       placeholder="e.g. Wireless Mouse"
+                                       required>
+                                @error('name')
+                                    <div class="invalid-feedback d-block small">{{ $message }}</div>
+                                @enderror
+                            </div>
 
-                        <!-- Product Name -->
-                        <div class="mb-3">
-                            <label for="name" class="form-label small fw-semibold">Product Name</label>
-                            <input type="text" 
-                                   id="name" 
-                                   name="name" 
-                                   class="form-control form-control-sm @error('name') is-invalid @enderror" 
-                                   value="{{ old('name', $product->name) }}" 
-                                   placeholder="e.g. Wireless Mouse" 
-                                   required>
-                            @error('name')
-                                <div class="invalid-feedback d-block small">{{ $message }}</div>
-                            @enderror
+                            <div class="col-md-4">
+                                <label for="code" class="form-label small fw-semibold">SKU / Code</label>
+                                <input type="text"
+                                       id="code"
+                                       name="code"
+                                       class="form-control form-control-sm @error('code') is-invalid @enderror"
+                                       value="{{ old('code', $product->code) }}"
+                                       placeholder="e.g. PROD-001"
+                                       required>
+                                @error('code')
+                                    <div class="invalid-feedback d-block small">{{ $message }}</div>
+                                @enderror
+                            </div>
                         </div>
 
-                        <!-- Description Field -->
                         <div class="mb-3">
                             <label for="description" class="form-label small fw-semibold">Description</label>
-                            <textarea id="description" 
-                                      name="description" 
-                                      rows="3" 
-                                      class="form-control form-control-sm @error('description') is-invalid @enderror" 
+                            <textarea id="description"
+                                      name="description"
+                                      rows="3"
+                                      class="form-control form-control-sm @error('description') is-invalid @enderror"
                                       placeholder="Enter product details, specifications, or notes...">{{ old('description', $product->description) }}</textarea>
                             @error('description')
                                 <div class="invalid-feedback d-block small">{{ $message }}</div>
                             @enderror
                         </div>
 
-                        <!-- SKU Code -->
-                        <div class="mb-3">
-                            <label for="code" class="form-label small fw-semibold">SKU / Code</label>
-                            <input type="text" 
-                                   id="code" 
-                                   name="code" 
-                                   class="form-control form-control-sm @error('code') is-invalid @enderror" 
-                                   value="{{ old('code', $product->code) }}" 
-                                   placeholder="e.g. PROD-001" 
-                                   required>
-                            @error('code')
-                                <div class="invalid-feedback d-block small">{{ $message }}</div>
-                            @enderror
+                        <!-- Product Photo -->
+                        <div class="mb-3 mb-lg-0">
+                            <label for="photo" class="form-label small fw-semibold">Photo</label>
+                            <div class="d-flex align-items-start gap-3">
+                                <div class="flex-grow-1">
+                                    @if($product->photo)
+                                        <div class="form-check mb-1">
+                                            <input type="checkbox" class="form-check-input" id="remove_photo" name="remove_photo" value="1">
+                                            <label class="form-check-label small text-danger" for="remove_photo">Remove current photo</label>
+                                        </div>
+                                    @endif
+                                    <input type="file"
+                                           id="photo"
+                                           name="photo"
+                                           accept="image/*"
+                                           class="form-control form-control-sm @error('photo') is-invalid @enderror">
+                                    <div class="form-text small">Optional. JPG, PNG, or WebP, up to 4MB. Uploading a new photo replaces the current one.</div>
+                                    @error('photo')
+                                        <div class="invalid-feedback d-block small">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                                @if($product->photo)
+                                    <img id="currentPhoto" src="{{ $product->photo_url }}" alt="{{ $product->name }}" class="img-thumbnail" style="max-height: 70px;">
+                                @endif
+                                <img id="photoPreview" src="" alt="Preview" class="img-thumbnail d-none" style="max-height: 70px;">
+                            </div>
                         </div>
+                    </div>
 
-                        <!-- Unit Value & Base Unit Row -->
+                    <!-- Right column: units, conversions, pricing -->
+                    <div class="col-lg-6 mt-4 mt-lg-0">
                         <div class="row mb-3">
-                            <!-- Unit Value / Qty Field -->
                             <div class="col-md-4">
                                 <label for="unit_value" class="form-label small fw-semibold">Unit Value / Qty</label>
-                                <input type="number" 
-                                       step="any" 
-                                       id="unit_value" 
-                                       name="unit_value" 
-                                       class="form-control form-control-sm @error('unit_value') is-invalid @enderror" 
-                                       value="{{ old('unit_value', $product->unit_value ?? 1) }}" 
-                                       placeholder="e.g. 100" 
+                                <input type="number"
+                                       step="any"
+                                       id="unit_value"
+                                       name="unit_value"
+                                       class="form-control form-control-sm @error('unit_value') is-invalid @enderror"
+                                       value="{{ old('unit_value', $product->unit_value ?? 1) }}"
+                                       placeholder="e.g. 100"
                                        required>
                                 @error('unit_value')
                                     <div class="invalid-feedback d-block small">{{ $message }}</div>
@@ -128,15 +157,15 @@
                             <div class="col-md-8">
                                 <label for="base_unit_name_display" class="form-label small fw-semibold">Base Unit</label>
                                 <div class="input-group input-group-sm">
-                                    <input type="text" 
-                                           id="base_unit_name_display" 
-                                           class="form-control @error('base_unit_id') is-invalid @enderror" 
-                                           placeholder="Click 'Browse' to select..." 
-                                           readonly 
+                                    <input type="text"
+                                           id="base_unit_name_display"
+                                           class="form-control @error('base_unit_id') is-invalid @enderror"
+                                           placeholder="Click 'Browse' to select..."
+                                           readonly
                                            required>
-                                    <input type="hidden" 
-                                           id="base_unit_id" 
-                                           name="base_unit_id" 
+                                    <input type="hidden"
+                                           id="base_unit_id"
+                                           name="base_unit_id"
                                            value="{{ old('base_unit_id', $product->base_unit_id ?? '') }}">
                                     <button type="button" class="btn btn-outline-secondary px-3" data-bs-toggle="modal" data-bs-target="#selectBaseUnitModal">
                                         <i class="bi bi-search me-1"></i> Browse
@@ -148,23 +177,29 @@
                             </div>
                         </div>
 
-                        <!-- Reorder Point -->
+                        <!-- Applicable Unit Conversions -->
                         <div class="mb-3">
-                            <label for="reorder_point" class="form-label small fw-semibold">Reorder Point</label>
-                            <input type="number" 
-                                   step="0.01" 
-                                   id="reorder_point" 
-                                   name="reorder_point" 
-                                   class="form-control form-control-sm @error('reorder_point') is-invalid @enderror" 
-                                   value="{{ old('reorder_point', $product->reorder_point) }}" 
-                                   placeholder="e.g. 10.00">
-                            @error('reorder_point')
-                                <div class="invalid-feedback d-block small">{{ $message }}</div>
-                            @enderror
+                            <label class="form-label small fw-semibold">Applicable Unit Conversions <span class="text-muted fw-normal">(optional)</span></label>
+                            <div id="conversionsList" class="border rounded p-2 d-flex flex-wrap column-gap-4 row-gap-1" style="max-height: 110px; overflow-y: auto;">
+                                <span class="text-muted small">Select a base unit first.</span>
+                            </div>
+                            <div class="form-text small">Check which of this base unit's conversions apply to this product.</div>
                         </div>
 
-                        <!-- Pricing Row -->
                         <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="reorder_point" class="form-label small fw-semibold">Reorder Point</label>
+                                <input type="number"
+                                       step="0.01"
+                                       id="reorder_point"
+                                       name="reorder_point"
+                                       class="form-control form-control-sm @error('reorder_point') is-invalid @enderror"
+                                       value="{{ old('reorder_point', $product->reorder_point) }}"
+                                       placeholder="e.g. 10.00">
+                                @error('reorder_point')
+                                    <div class="invalid-feedback d-block small">{{ $message }}</div>
+                                @enderror
+                            </div>
                             <div class="col-md-6">
                                 <label for="selling_price" class="form-label small fw-semibold">Selling Price</label>
                                 <input type="number"
@@ -178,6 +213,9 @@
                                     <div class="invalid-feedback d-block small">{{ $message }}</div>
                                 @enderror
                             </div>
+                        </div>
+
+                        <div class="row mb-3">
                             <div class="col-md-6">
                                 <label for="cost" class="form-label small fw-semibold">Cost</label>
                                 <input type="number"
@@ -192,19 +230,19 @@
                                 @enderror
                             </div>
                         </div>
-
-                        <!-- Action Buttons -->
-                        <div class="d-flex align-items-center gap-2 mt-4 pt-2 border-top">
-                            <button type="submit" class="btn btn-github btn-sm px-3">
-                                <i class="bi bi-check-lg me-1"></i> Update Product
-                            </button>
-                            <a href="{{ route('products.index') }}" class="btn btn-outline-github btn-sm">
-                                Cancel
-                            </a>
-                        </div>
-                    </form>
+                    </div>
                 </div>
-            </div>
+
+                <!-- Action Buttons -->
+                <div class="d-flex align-items-center gap-2 mt-2 pt-3 border-top">
+                    <button type="submit" class="btn btn-github btn-sm px-3">
+                        <i class="bi bi-check-lg me-1"></i> Update Product
+                    </button>
+                    <a href="{{ route('products.index') }}" class="btn btn-outline-github btn-sm">
+                        Cancel
+                    </a>
+                </div>
+            </form>
         </div>
     </div>
 
@@ -258,6 +296,31 @@
     </div>
 
     <script>
+    // Every registered unit conversion — filtered client-side to whichever
+    // ones start from the currently selected base unit.
+    const allConversions = @json($conversionOptions);
+    const selectedConversionIds = @json(old('unit_conversion_ids', $selectedConversionIds));
+
+    function syncConversionOptions() {
+        const baseUnitId = document.getElementById('base_unit_id').value;
+        const list = document.getElementById('conversionsList');
+        const matches = allConversions.filter(c => String(c.from_unit_id) === String(baseUnitId));
+
+        if (!baseUnitId) {
+            list.innerHTML = '<span class="text-muted small">Select a base unit first.</span>';
+        } else if (matches.length === 0) {
+            list.innerHTML = '<span class="text-muted small">No conversions defined yet for this base unit.</span>';
+        } else {
+            list.innerHTML = matches.map(c => `
+                <div class="form-check">
+                    <input type="checkbox" name="unit_conversion_ids[]" value="${c.id}" id="conversion_${c.id}"
+                           class="form-check-input" ${selectedConversionIds.includes(c.id) || selectedConversionIds.includes(String(c.id)) ? 'checked' : ''}>
+                    <label for="conversion_${c.id}" class="form-check-label small">${c.label}</label>
+                </div>
+            `).join('');
+        }
+    }
+
     document.addEventListener('DOMContentLoaded', function() {
         let hiddenInputId = document.getElementById('base_unit_id').value;
         if (hiddenInputId) {
@@ -266,6 +329,7 @@
                 document.getElementById('base_unit_name_display').value = matchingBtn.getAttribute('data-name');
             }
         }
+        syncConversionOptions();
 
         document.querySelectorAll('.select-unit-btn').forEach(button => {
             button.addEventListener('click', function() {
@@ -274,7 +338,26 @@
 
                 document.getElementById('base_unit_id').value = unitId;
                 document.getElementById('base_unit_name_display').value = unitName;
+
+                syncConversionOptions();
             });
+        });
+
+        // Live preview of the chosen photo before it's uploaded.
+        const photoInput = document.getElementById('photo');
+        const photoPreview = document.getElementById('photoPreview');
+        const removePhotoCheckbox = document.getElementById('remove_photo');
+        photoInput?.addEventListener('change', function () {
+            const file = this.files[0];
+            if (!file) {
+                photoPreview.classList.add('d-none');
+                photoPreview.src = '';
+                return;
+            }
+            photoPreview.src = URL.createObjectURL(file);
+            photoPreview.classList.remove('d-none');
+            // Choosing a new photo supersedes "remove current photo".
+            if (removePhotoCheckbox) removePhotoCheckbox.checked = false;
         });
     });
     </script>

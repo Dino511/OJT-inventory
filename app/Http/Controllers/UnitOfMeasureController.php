@@ -23,7 +23,7 @@ class UnitOfMeasureController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:100|unique:base_units,name',
-            'code' => 'nullable|string|max:50|unique:base_units,code',
+            'code' => 'required|string|max:50|unique:base_units,code',
         ]);
 
         UnitOfMeasure::create($validated);
@@ -40,7 +40,7 @@ class UnitOfMeasureController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:100|unique:base_units,name,' . $base_unit->id,
-            'code' => 'nullable|string|max:50|unique:base_units,code,' . $base_unit->id,
+            'code' => 'required|string|max:50|unique:base_units,code,' . $base_unit->id,
         ]);
 
         $base_unit->update($validated);

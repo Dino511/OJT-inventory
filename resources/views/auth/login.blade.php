@@ -43,11 +43,15 @@
 
                 <div class="mb-3">
                     <label for="password" class="form-label small fw-semibold">Password</label>
-                    <input type="password" id="password" name="password" 
+                    <input type="password" id="password" name="password"
                            class="form-control form-control-sm @error('password') is-invalid @enderror" required>
                     @error('password')
                         <div class="invalid-feedback small">{{ $message }}</div>
                     @enderror
+                    <div class="form-check mt-1">
+                        <input type="checkbox" class="form-check-input" id="showPassword">
+                        <label class="form-check-label small" for="showPassword">Show password</label>
+                    </div>
                 </div>
 
                 <div class="mb-3 d-flex justify-content-between align-items-center">
@@ -67,5 +71,11 @@
         </div>
 
     </div>
+
+    <script>
+        document.getElementById('showPassword')?.addEventListener('change', function () {
+            document.getElementById('password').type = this.checked ? 'text' : 'password';
+        });
+    </script>
 </body>
 </html>

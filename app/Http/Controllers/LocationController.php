@@ -27,6 +27,7 @@ class LocationController extends Controller
             'company_id'  => 'required|exists:companies,company_id',
             'name'        => 'required|string|max:100',
             'description' => 'nullable|string|max:500', // <-- Added here
+            'type'        => 'required|in:store,warehouse',
         ]);
 
         Location::create($validated);
@@ -46,11 +47,20 @@ class LocationController extends Controller
             'company_id'  => 'required|exists:companies,company_id',
             'name'        => 'required|string|max:255',
             'description' => 'nullable|string|max:500', // <-- Added here
+            'type'        => 'required|in:store,warehouse',
         ]);
 
         $location->update($validated);
 
         return redirect()->route('locations.index')->with('success', 'Location updated successfully.');
+    }
+
+    public function toggleStatus(Location $location)
+    {
+        $location->update(['is_active' => ! $location->is_active]);
+
+        return redirect()->route('locations.index')
+            ->with('success', 'Location ' . ($location->is_active ? 'activated' : 'deactivated') . ' successfully.');
     }
 
     public function destroy(Location $location)

@@ -12,7 +12,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
-#[Fillable(['name', 'email', 'password', 'company_id', 'role', 'alternative_email', 'is_active'])]
+#[Fillable(['name', 'email', 'password', 'company_id', 'location_id', 'role', 'alternative_email', 'is_active', 'avatar'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
@@ -43,6 +43,11 @@ class User extends Authenticatable
         return (bool) $this->is_active;
     }
 
+    public function getAvatarUrlAttribute(): ?string
+    {
+        return $this->avatar ? asset('storage/' . $this->avatar) : null;
+    }
+
     /**
      * Moderators (cashier/delivery staff) are POS-only — everyone else can
      * use the inventory back office (Business Admins are further restricted
@@ -70,6 +75,17 @@ class User extends Authenticatable
     public function company(): BelongsTo
     {
         return $this->belongsTo(Company::class, 'company_id', 'company_id');
+    }
+
+    /**
+     * The location this user is locked to selling from in POS. Only set for
+     * moderators — once assigned (by the moderator's own first pick, or by
+     * an admin), a moderator can no longer change it themselves. See POS's
+     * LocationSessionController and TeamController.
+     */
+    public function location(): BelongsTo
+    {
+        return $this->belongsTo(Location::class, 'location_id');
     }
 
     /**

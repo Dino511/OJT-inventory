@@ -77,6 +77,29 @@
                             @enderror
                         </div>
 
+                        <div class="mb-3" id="locationField">
+                            <label for="location_id" class="form-label small fw-semibold">POS Location</label>
+                            <select id="location_id" name="location_id" class="form-select form-select-sm @error('location_id') is-invalid @enderror">
+                                <option value="">No location assigned yet</option>
+                                @foreach($companies as $company)
+                                    @php $companyLocations = $locations->where('company_id', $company->company_id); @endphp
+                                    @if($companyLocations->isNotEmpty())
+                                        <optgroup label="{{ $company->name }}">
+                                            @foreach($companyLocations as $location)
+                                                <option value="{{ $location->id }}" data-company="{{ $location->company_id }}" {{ old('location_id') == $location->id ? 'selected' : '' }}>
+                                                    {{ $location->name }}
+                                                </option>
+                                            @endforeach
+                                        </optgroup>
+                                    @endif
+                                @endforeach
+                            </select>
+                            <div class="form-text small">Locks a Moderator to selling from this location in POS. Must be one of the checked companies above.</div>
+                            @error('location_id')
+                                <div class="invalid-feedback d-block small">{{ $message }}</div>
+                            @enderror
+                        </div>
+
                         <div class="mb-3">
                             <label for="password" class="form-label small fw-semibold">Password</label>
                             <input type="password" id="password" name="password"
@@ -107,3 +130,17 @@
         </div>
     </div>
 @endsection
+
+@push('scripts')
+    <script>
+        const roleSelect = document.getElementById('role');
+        const locationField = document.getElementById('locationField');
+
+        function syncLocationField() {
+            locationField.classList.toggle('d-none', roleSelect.value !== 'moderator');
+        }
+
+        roleSelect.addEventListener('change', syncLocationField);
+        syncLocationField();
+    </script>
+@endpush
