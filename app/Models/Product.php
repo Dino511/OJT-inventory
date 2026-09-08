@@ -81,4 +81,14 @@ class Product extends Model
     {
         return $this->belongsToMany(UnitConversion::class, 'product_unit_conversions');
     }
+
+    /**
+     * Every supplier that can provide this product. A product may have
+     * more than one supplier (and vice versa), hence the pivot rather
+     * than a plain supplier_id column here.
+     */
+    public function suppliers(): BelongsToMany
+    {
+        return $this->belongsToMany(Supplier::class, 'product_supplier');
+    }
 }

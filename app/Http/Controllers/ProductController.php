@@ -7,6 +7,7 @@ use App\Models\Company;
 use App\Models\ProductCategory;
 use App\Models\BaseUnit;
 use App\Models\ProductActivityLog;
+use App\Models\Supplier;
 use App\Models\UnitConversion;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
@@ -60,8 +61,9 @@ class ProductController extends Controller
         $categories = ProductCategory::all();
         $baseUnits = BaseUnit::all();
         $conversionOptions = $this->conversionOptions();
+        $suppliers = Supplier::orderBy('name')->get();
 
-        return view('products.create', compact('companies', 'categories', 'baseUnits', 'conversionOptions'));
+        return view('products.create', compact('companies', 'categories', 'baseUnits', 'conversionOptions', 'suppliers'));
     }
 
     /**
@@ -104,10 +106,15 @@ class ProductController extends Controller
                 'integer',
                 Rule::exists('unit_conversions', 'id')->where('from_unit_id', $request->input('base_unit_id')),
             ],
+            'supplier_ids' => 'nullable|array',
+            'supplier_ids.*' => 'integer|exists:suppliers,id',
         ]);
 
         $conversionIds = $validated['unit_conversion_ids'] ?? [];
         unset($validated['unit_conversion_ids']);
+
+        $supplierIds = $validated['supplier_ids'] ?? [];
+        unset($validated['supplier_ids']);
 
         if ($request->hasFile('photo')) {
             $validated['photo'] = $request->file('photo')->store('products', 'public');
@@ -115,6 +122,7 @@ class ProductController extends Controller
 
         $product = Product::create($validated);
         $product->unitConversions()->sync($conversionIds);
+        $product->suppliers()->sync($supplierIds);
 
         return redirect()->route('products.index')->with('success', 'Product created successfully.');
     }
@@ -139,8 +147,13 @@ class ProductController extends Controller
         $baseUnits = BaseUnit::all();
         $conversionOptions = $this->conversionOptions();
         $selectedConversionIds = $product->unitConversions->pluck('id')->all();
+        $suppliers = Supplier::orderBy('name')->get();
+        $selectedSupplierIds = $product->suppliers->pluck('id')->all();
 
-        return view('products.edit', compact('product', 'companies', 'categories', 'baseUnits', 'conversionOptions', 'selectedConversionIds'));
+        return view('products.edit', compact(
+            'product', 'companies', 'categories', 'baseUnits',
+            'conversionOptions', 'selectedConversionIds', 'suppliers', 'selectedSupplierIds'
+        ));
     }
 
     /**
@@ -166,10 +179,15 @@ class ProductController extends Controller
                 'integer',
                 Rule::exists('unit_conversions', 'id')->where('from_unit_id', $request->input('base_unit_id')),
             ],
+            'supplier_ids' => 'nullable|array',
+            'supplier_ids.*' => 'integer|exists:suppliers,id',
         ]);
 
         $conversionIds = $validated['unit_conversion_ids'] ?? [];
         unset($validated['unit_conversion_ids']);
+
+        $supplierIds = $validated['supplier_ids'] ?? [];
+        unset($validated['supplier_ids']);
 
         $removePhoto = ! empty($validated['remove_photo']);
         unset($validated['remove_photo']);
@@ -188,6 +206,7 @@ class ProductController extends Controller
 
         $product->update($validated);
         $product->unitConversions()->sync($conversionIds);
+        $product->suppliers()->sync($supplierIds);
 
         return redirect()->route('products.index')->with('success', 'Product updated successfully.');
     }

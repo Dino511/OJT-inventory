@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Supplier extends Model
 {
@@ -15,4 +16,14 @@ class Supplier extends Model
         'email',
         'address',
     ];
+
+    /**
+     * Every product this supplier can provide. A product may be supplied
+     * by more than one supplier (and vice versa), hence the pivot rather
+     * than a plain supplier_id column on products.
+     */
+    public function products(): BelongsToMany
+    {
+        return $this->belongsToMany(Product::class, 'product_supplier');
+    }
 }

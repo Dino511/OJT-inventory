@@ -20,15 +20,15 @@
                         @csrf
                         @method('PUT')
 
-                        <div class="mb-4 text-center">
+                        <div class="mb-4 d-flex flex-column align-items-center text-center">
                             @if($user->avatar)
                                 <img id="currentAvatar" src="{{ $user->avatar_url }}" alt="{{ $user->name }}" class="rounded-circle border" style="width: 96px; height: 96px; object-fit: cover;">
                             @else
-                                <div id="currentAvatar" class="rounded-circle bg-secondary-subtle border d-flex align-items-center justify-content-center mx-auto" style="width: 96px; height: 96px;">
+                                <div id="currentAvatar" class="rounded-circle bg-secondary-subtle border d-flex align-items-center justify-content-center" style="width: 96px; height: 96px;">
                                     <i class="bi bi-person-fill text-secondary" style="font-size: 2.5rem;"></i>
                                 </div>
                             @endif
-                            <img id="avatarPreview" src="" alt="Preview" class="rounded-circle border d-none mx-auto mt-2" style="width: 96px; height: 96px; object-fit: cover;">
+                            <img id="avatarPreview" src="" alt="Preview" class="rounded-circle border d-none mt-2" style="width: 96px; height: 96px; object-fit: cover;">
 
                             <div class="mt-2">
                                 <label for="avatar" class="btn btn-outline-github btn-sm">

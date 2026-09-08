@@ -80,6 +80,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/stock-transfers/{stock_transfer}/cancel', [StockTransferController::class, 'cancel'])->name('stock-transfers.cancel');
 
     Route::get('/deliveries', [DeliveryController::class, 'index'])->name('deliveries.index');
+    Route::get('/deliveries/export', [DeliveryController::class, 'export'])->name('deliveries.export');
 
     Route::middleware('role:super_admin')->group(function () {
         Route::delete('/inventory/{inventory}', [InventoryController::class, 'destroy'])->name('inventory.destroy');

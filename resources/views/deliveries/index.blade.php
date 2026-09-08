@@ -9,9 +9,14 @@
             <h3 class="fw-bold mb-1">Delivery Tracking</h3>
             <p class="text-secondary small mb-0">Every purchase order and warehouse&rarr;store stock transfer, in one place.</p>
         </div>
-        <a href="{{ route('purchase-orders.index') }}" class="btn btn-outline-github btn-sm px-3">
-            <i class="bi bi-cart me-1"></i> Purchase Orders
-        </a>
+        <div class="d-flex gap-2">
+            <a href="{{ route('deliveries.export') }}" class="btn btn-outline-github btn-sm px-3">
+                <i class="bi bi-file-earmark-excel me-1"></i> Export to Excel
+            </a>
+            <a href="{{ route('purchase-orders.index') }}" class="btn btn-outline-github btn-sm px-3">
+                <i class="bi bi-cart me-1"></i> Purchase Orders
+            </a>
+        </div>
     </div>
 
     <!-- Main Card Container -->

@@ -30,10 +30,27 @@ class PurchaseOrderController extends Controller
     {
         $companies = Company::orderBy('name')->get();
         $locations = Location::where('type', Location::TYPE_WAREHOUSE)->orderBy('name')->get();
-        $products = Product::where('is_active', true)->orderBy('name')->get();
+        $products = Product::where('is_active', true)->with('suppliers')->orderBy('name')->get();
         $suppliers = Supplier::orderBy('name')->get();
 
-        return view('purchase_orders.create', compact('companies', 'locations', 'products', 'suppliers'));
+        // Pre-shaped into plain arrays (rather than mapped inline inside an
+        // @json() Blade call) since a closure/array-literal argument there
+        // confuses Blade's bracket-balance pre-check.
+        $locationOptions = $locations->map(fn ($l) => [
+            'id' => $l->id,
+            'name' => $l->name,
+            'company_id' => $l->company_id,
+        ])->values()->all();
+
+        $productOptions = $products->map(fn ($p) => [
+            'id' => $p->id,
+            'name' => $p->name,
+            'company_id' => $p->company_id,
+            'cost' => $p->cost,
+            'supplier_ids' => $p->suppliers->pluck('id')->all(),
+        ])->values()->all();
+
+        return view('purchase_orders.create', compact('companies', 'locations', 'products', 'suppliers', 'locationOptions', 'productOptions'));
     }
 
     public function store(Request $request)
@@ -48,14 +65,20 @@ class PurchaseOrderController extends Controller
             ],
             'supplier_id' => ['required', Rule::exists('suppliers', 'id')],
             'order_date' => 'required|date',
-            'expected_delivery_date' => 'nullable|date|after_or_equal:order_date',
+            'expected_delivery_date' => 'required|date|after_or_equal:order_date',
             'notes' => 'nullable|string|max:1000',
             'product_id' => 'required|array|min:1',
-            'product_id.*' => ['required', Rule::exists('products', 'id')->where('company_id', $request->input('company_id'))],
+            'product_id.*' => [
+                'required',
+                Rule::exists('products', 'id')->where('company_id', $request->input('company_id')),
+                Rule::exists('product_supplier', 'product_id')->where('supplier_id', $request->input('supplier_id')),
+            ],
             'quantity' => 'required|array|size:' . count($request->input('product_id', [])),
             'quantity.*' => 'required|integer|min:1',
             'unit_cost' => 'required|array|size:' . count($request->input('product_id', [])),
             'unit_cost.*' => 'nullable|numeric|min:0',
+        ], [
+            'product_id.*.exists' => 'One or more selected products are not available from this supplier.',
         ]);
 
         $purchaseOrder = DB::transaction(function () use ($validated) {

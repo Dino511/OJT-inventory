@@ -24,6 +24,25 @@
 
                 <div class="row mb-3">
                     <div class="col-md-4">
+                        <label for="supplier_id" class="form-label small fw-semibold">Supplier</label>
+                        <select id="supplier_id" name="supplier_id" class="form-select form-select-sm @error('supplier_id') is-invalid @enderror" required>
+                            <option value="">Select a supplier...</option>
+                            @foreach($suppliers as $supplier)
+                                <option value="{{ $supplier->id }}" {{ old('supplier_id') == $supplier->id ? 'selected' : '' }}>
+                                    {{ $supplier->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                        @if($suppliers->isEmpty())
+                            <div class="form-text small">No suppliers yet — <a href="{{ route('suppliers.create') }}">add one first</a>.</div>
+                        @else
+                            <div class="form-text small">Only products linked to this supplier will be selectable below.</div>
+                        @endif
+                        @error('supplier_id')
+                            <div class="invalid-feedback d-block small">{{ $message }}</div>
+                        @enderror
+                    </div>
+                    <div class="col-md-4">
                         <label for="company_id" class="form-label small fw-semibold">Company</label>
                         <select id="company_id" name="company_id" class="form-select form-select-sm @error('company_id') is-invalid @enderror" required>
                             <option value="">Select a company...</option>
@@ -47,23 +66,6 @@
                             <div class="invalid-feedback d-block small">{{ $message }}</div>
                         @enderror
                     </div>
-                    <div class="col-md-4">
-                        <label for="supplier_id" class="form-label small fw-semibold">Supplier</label>
-                        <select id="supplier_id" name="supplier_id" class="form-select form-select-sm @error('supplier_id') is-invalid @enderror" required>
-                            <option value="">Select a supplier...</option>
-                            @foreach($suppliers as $supplier)
-                                <option value="{{ $supplier->id }}" {{ old('supplier_id') == $supplier->id ? 'selected' : '' }}>
-                                    {{ $supplier->name }}
-                                </option>
-                            @endforeach
-                        </select>
-                        @if($suppliers->isEmpty())
-                            <div class="form-text small">No suppliers yet — <a href="{{ route('suppliers.create') }}">add one first</a>.</div>
-                        @endif
-                        @error('supplier_id')
-                            <div class="invalid-feedback d-block small">{{ $message }}</div>
-                        @enderror
-                    </div>
                 </div>
 
                 <div class="row mb-3">
@@ -77,10 +79,10 @@
                         @enderror
                     </div>
                     <div class="col-md-3">
-                        <label for="expected_delivery_date" class="form-label small fw-semibold">Expected Delivery <span class="text-muted fw-normal">(optional)</span></label>
+                        <label for="expected_delivery_date" class="form-label small fw-semibold">Expected Delivery</label>
                         <input type="date" id="expected_delivery_date" name="expected_delivery_date"
                                class="form-control form-control-sm @error('expected_delivery_date') is-invalid @enderror"
-                               value="{{ old('expected_delivery_date') }}">
+                               value="{{ old('expected_delivery_date') }}" required>
                         @error('expected_delivery_date')
                             <div class="invalid-feedback d-block small">{{ $message }}</div>
                         @enderror
@@ -132,16 +134,26 @@
         // Every location and product, tagged with the company they belong
         // to — lets picking a Company filter both the "Deliver To" location
         // and every product row's choices without a round-trip.
-        const allLocations = @json($locations->map(fn ($l) => ['id' => $l->id, 'name' => $l->name, 'company_id' => $l->company_id]));
-        const allProducts = @json($products->map(fn ($p) => ['id' => $p->id, 'name' => $p->name, 'company_id' => $p->company_id]));
+        const allLocations = @json($locationOptions);
+        const allProducts = @json($productOptions);
 
         const companySelect = document.getElementById('company_id');
+        const supplierSelect = document.getElementById('supplier_id');
         const locationSelect = document.getElementById('location_id');
         const rowsContainer = document.getElementById('poRows');
         const addRowBtn = document.getElementById('addProductRow');
 
+        // A product must belong to the selected Company and be linked to
+        // the selected Supplier to show up — a product with no suppliers
+        // linked at all simply won't appear once a supplier is chosen.
         function productsForCompany(companyId) {
-            return allProducts.filter(p => String(p.company_id) === String(companyId));
+            const supplierId = supplierSelect.value;
+
+            return allProducts.filter(p => {
+                if (String(p.company_id) !== String(companyId)) return false;
+                if (supplierId && !p.supplier_ids.map(String).includes(String(supplierId))) return false;
+                return true;
+            });
         }
 
         function syncLocationOptions() {
@@ -189,7 +201,7 @@
                     <input type="number" name="quantity[]" min="1" class="form-control form-control-sm" required>
                 </td>
                 <td>
-                    <input type="number" name="unit_cost[]" min="0" step="0.01" class="form-control form-control-sm" placeholder="e.g. 50.00">
+                    <input type="number" name="unit_cost[]" min="0" step="0.01" class="form-control form-control-sm unit-cost-input" placeholder="e.g. 50.00">
                 </td>
                 <td class="text-end">
                     <button type="button" class="btn btn-sm btn-outline-danger remove-row" title="Remove this product">
@@ -205,10 +217,29 @@
             });
         }
 
+        // Suggest the product's known cost as the Unit Cost whenever a
+        // product is (re)selected in any row — the field stays editable so
+        // the user can override it for this specific order.
+        rowsContainer.addEventListener('change', (e) => {
+            if (!e.target.classList.contains('product-select')) return;
+
+            const row = e.target.closest('tr');
+            const unitCostInput = row ? row.querySelector('.unit-cost-input') : null;
+            const product = allProducts.find(p => String(p.id) === e.target.value);
+
+            if (unitCostInput) {
+                unitCostInput.value = product && product.cost !== null ? product.cost : '';
+            }
+        });
+
         companySelect.addEventListener('change', () => {
             syncLocationOptions();
             syncRowProductOptions();
             addRowBtn.disabled = !companySelect.value;
+        });
+
+        supplierSelect.addEventListener('change', () => {
+            syncRowProductOptions();
         });
 
         addRowBtn.addEventListener('click', addProductRow);

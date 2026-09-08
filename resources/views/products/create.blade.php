@@ -207,6 +207,23 @@
                                 @enderror
                             </div>
                         </div>
+
+                        <!-- Suppliers -->
+                        <div class="mb-3">
+                            <label class="form-label small fw-semibold">Suppliers <span class="text-muted fw-normal">(optional)</span></label>
+                            <div class="border rounded p-2 d-flex flex-wrap column-gap-4 row-gap-1" style="max-height: 110px; overflow-y: auto;">
+                                @forelse($suppliers as $supplier)
+                                    <div class="form-check" style="min-width: 160px;">
+                                        <input type="checkbox" name="supplier_ids[]" value="{{ $supplier->id }}" id="supplier_{{ $supplier->id }}"
+                                               class="form-check-input" {{ in_array($supplier->id, old('supplier_ids', [])) ? 'checked' : '' }}>
+                                        <label for="supplier_{{ $supplier->id }}" class="form-check-label small">{{ $supplier->name }}</label>
+                                    </div>
+                                @empty
+                                    <span class="text-muted small">No suppliers registered yet — <a href="{{ route('suppliers.create') }}">add one first</a>.</span>
+                                @endforelse
+                            </div>
+                            <div class="form-text small">Check which suppliers can provide this product — used to filter the product list on a Purchase Order once a supplier is picked.</div>
+                        </div>
                     </div>
                 </div>
 

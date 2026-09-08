@@ -75,7 +75,12 @@
                                 <span class="fw-semibold">{{ $item->product->name ?? 'N/A' }}</span>
                             </td>
                             <td>
-                                <span class="text-secondary">{{ $item->location->name ?? 'N/A' }}</span>
+                                <span class="text-secondary">
+                                    {{ $item->location->name ?? 'N/A' }}
+                                    @if($item->location)
+                                        <span class="badge bg-light text-secondary border ms-1">{{ $item->location->isWarehouse() ? 'Warehouse' : 'Store' }}</span>
+                                    @endif
+                                </span>
                             </td>
                             <td>
                                 <span class="badge {{ ($item->quantity ?? $item->stock ?? 0) > 10 ? 'bg-success-subtle text-success border border-success-subtle' : 'bg-danger-subtle text-danger border border-danger-subtle' }} px-2 py-1">
