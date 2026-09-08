@@ -48,6 +48,14 @@ class CompanyController extends Controller
         return redirect()->route('companies.index')->with('success', 'Company updated successfully.');
     }
 
+    public function toggleStatus(Company $company)
+    {
+        $company->update(['is_active' => ! $company->is_active]);
+
+        return redirect()->route('companies.index')
+            ->with('success', 'Company ' . ($company->is_active ? 'activated' : 'deactivated') . ' successfully.');
+    }
+
     public function destroy(Company $company)
     {
         try {

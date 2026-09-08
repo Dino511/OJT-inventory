@@ -16,9 +16,38 @@
                     <span class="fw-semibold text-secondary small">ACCOUNT DETAILS</span>
                 </div>
                 <div class="card-body p-4">
-                    <form action="{{ route('profile.update') }}" method="POST">
+                    <form action="{{ route('profile.update') }}" method="POST" enctype="multipart/form-data">
                         @csrf
                         @method('PUT')
+
+                        <div class="mb-4 d-flex flex-column align-items-center text-center">
+                            @if($user->avatar)
+                                <img id="currentAvatar" src="{{ $user->avatar_url }}" alt="{{ $user->name }}" class="rounded-circle border" style="width: 96px; height: 96px; object-fit: cover;">
+                            @else
+                                <div id="currentAvatar" class="rounded-circle bg-secondary-subtle border d-flex align-items-center justify-content-center" style="width: 96px; height: 96px;">
+                                    <i class="bi bi-person-fill text-secondary" style="font-size: 2.5rem;"></i>
+                                </div>
+                            @endif
+                            <img id="avatarPreview" src="" alt="Preview" class="rounded-circle border d-none mt-2" style="width: 96px; height: 96px; object-fit: cover;">
+
+                            <div class="mt-2">
+                                <label for="avatar" class="btn btn-outline-github btn-sm">
+                                    <i class="bi bi-camera me-1"></i> Change Photo
+                                </label>
+                                <input type="file" id="avatar" name="avatar" accept="image/*" class="d-none @error('avatar') is-invalid @enderror">
+
+                                @if($user->avatar)
+                                    <div class="form-check d-inline-block ms-2">
+                                        <input type="checkbox" class="form-check-input" id="remove_avatar" name="remove_avatar" value="1">
+                                        <label class="form-check-label small text-danger" for="remove_avatar">Remove photo</label>
+                                    </div>
+                                @endif
+                            </div>
+                            <div class="form-text small">JPG, PNG, or WebP, up to 4MB.</div>
+                            @error('avatar')
+                                <div class="invalid-feedback d-block small">{{ $message }}</div>
+                            @enderror
+                        </div>
 
                         <div class="mb-3">
                             <label for="name" class="form-label small fw-semibold">Full Name</label>
@@ -38,6 +67,30 @@
                             @error('email')
                                 <div class="invalid-feedback d-block small">{{ $message }}</div>
                             @enderror
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="alternative_email" class="form-label small fw-semibold">Alternative Email <span class="text-muted fw-normal">(optional)</span></label>
+                            <input type="email" id="alternative_email" name="alternative_email"
+                                   class="form-control form-control-sm @error('alternative_email') is-invalid @enderror"
+                                   value="{{ old('alternative_email', $user->alternative_email) }}">
+                            <div class="form-text small">Password reset codes are sent here instead of your primary email, if set.</div>
+                            @error('alternative_email')
+                                <div class="invalid-feedback d-block small">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label small fw-semibold">Role</label>
+                            @php
+                                $roleLabel = match($user->role) {
+                                    'super_admin' => 'Super Admin — full access to both systems',
+                                    'business_admin' => 'Business Admin — everything except Users management',
+                                    default => 'Moderator — POS only',
+                                };
+                            @endphp
+                            <input type="text" class="form-control form-control-sm" value="{{ $roleLabel }}" disabled>
+                            <div class="form-text small">Only a Super Admin can change your role, from the Users page.</div>
                         </div>
 
                         <hr class="my-3">
@@ -79,4 +132,25 @@
             </div>
         </div>
     </div>
+
+    <script>
+        const avatarInput = document.getElementById('avatar');
+        const avatarPreview = document.getElementById('avatarPreview');
+        const currentAvatar = document.getElementById('currentAvatar');
+        const removeAvatarCheckbox = document.getElementById('remove_avatar');
+
+        avatarInput?.addEventListener('change', function () {
+            const file = this.files[0];
+            if (!file) {
+                avatarPreview.classList.add('d-none');
+                avatarPreview.src = '';
+                return;
+            }
+            avatarPreview.src = URL.createObjectURL(file);
+            avatarPreview.classList.remove('d-none');
+            currentAvatar?.classList.add('d-none');
+            // Choosing a new photo supersedes "remove photo".
+            if (removeAvatarCheckbox) removeAvatarCheckbox.checked = false;
+        });
+    </script>
 @endsection

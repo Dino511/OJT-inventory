@@ -26,14 +26,15 @@
                         <th style="width: 80px;">ID</th>
                         <th>COMPANY NAME</th>
                         <th>CREATED AT</th>
-                        <th class="text-end" style="width: 150px;">ACTIONS</th>
+                        <th>STATUS</th>
+                        <th class="text-end" style="width: 190px;">ACTIONS</th>
                     </tr>
                 </thead>
                 <tbody>
                     @forelse($companies as $company)
                         <tr>
                             <td>
-                                <span class="badge bg-light text-dark border font-monospace">#{{ $company->id }}</span>
+                                <span class="badge bg-light text-dark border font-monospace">#{{ $company->company_id }}</span>
                             </td>
                             <td>
                                 <span class="fw-semibold text-dark">{{ $company->name }}</span>
@@ -41,20 +42,36 @@
                             <td class="text-secondary small">
                                 {{ $company->created_at ? $company->created_at->format('M d, Y') : 'N/A' }}
                             </td>
+                            <td>
+                                @if($company->is_active)
+                                    <span class="badge bg-success-subtle text-success border">Active</span>
+                                @else
+                                    <span class="badge bg-danger-subtle text-danger border">Inactive</span>
+                                @endif
+                            </td>
                             <td class="text-end">
                                 <div class="d-inline-flex gap-1">
-                                    <a href="{{ route('companies.edit', $company) }}" class="btn btn-sm btn-outline-github">Edit</a>
-                                    <form action="{{ route('companies.destroy', $company) }}" method="POST" class="d-inline-block">
+                                    <form action="{{ route('companies.toggle-status', $company) }}" method="POST" class="d-inline-block" onsubmit="return confirm('{{ $company->is_active ? 'Deactivate' : 'Activate' }} this company?');">
                                         @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="btn btn-sm btn-outline-github text-danger" onclick="return confirm('Are you sure?')">Delete</button>
+                                        @method('PATCH')
+                                        <button type="submit" class="btn btn-sm {{ $company->is_active ? 'btn-outline-warning' : 'btn-outline-success' }}" title="{{ $company->is_active ? 'Deactivate' : 'Activate' }}">
+                                            <i class="bi {{ $company->is_active ? 'bi-toggle-on' : 'bi-toggle-off' }}"></i>
+                                        </button>
                                     </form>
+                                    <a href="{{ route('companies.edit', $company) }}" class="btn btn-sm btn-outline-github">Edit</a>
+                                    @if(auth()->user()->isSuperAdmin())
+                                        <form action="{{ route('companies.destroy', $company) }}" method="POST" class="d-inline-block">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="btn btn-sm btn-outline-github text-danger" onclick="return confirm('Are you sure?')">Delete</button>
+                                        </form>
+                                    @endif
                                 </div>
                             </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="4" class="text-center py-4 text-muted">
+                            <td colspan="5" class="text-center py-4 text-muted">
                                 No companies created yet.
                             </td>
                         </tr>

@@ -29,6 +29,8 @@
                         <th>Company Name</th>
                         <th>Location Name</th>
                         <th>Description / Landmark</th>
+                        <th>Type</th>
+                        <th>Status</th>
                         <th class="text-end pe-4">Actions</th>
                     </tr>
                 </thead>
@@ -39,18 +41,41 @@
                             <td class="fw-semibold text-dark">{{ $location->company->name ?? 'N/A' }}</td>
                             <td>{{ $location->name }}</td>
                             <td class="text-secondary small">{{ $location->description ?? '—' }}</td>
+                            <td>
+                                @if($location->isWarehouse())
+                                    <span class="badge bg-info-subtle text-info border">Warehouse</span>
+                                @else
+                                    <span class="badge bg-light text-secondary border">Store</span>
+                                @endif
+                            </td>
+                            <td>
+                                @if($location->is_active)
+                                    <span class="badge bg-success-subtle text-success border">Active</span>
+                                @else
+                                    <span class="badge bg-danger-subtle text-danger border">Inactive</span>
+                                @endif
+                            </td>
                             <td class="text-end pe-4">
-                                <a href="{{ route('locations.edit', $location) }}" class="btn btn-sm btn-outline-github me-1" title="Edit">✏️</a>
-                                <form action="{{ route('locations.destroy', $location) }}" method="POST" class="d-inline-block">
+                                <form action="{{ route('locations.toggle-status', $location) }}" method="POST" class="d-inline-block" onsubmit="return confirm('{{ $location->is_active ? 'Deactivate' : 'Activate' }} this location?');">
                                     @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="btn btn-sm btn-outline-github text-danger" title="Delete" onclick="return confirm('Are you sure?')">🗑️</button>
+                                    @method('PATCH')
+                                    <button type="submit" class="btn btn-sm {{ $location->is_active ? 'btn-outline-warning' : 'btn-outline-success' }} me-1" title="{{ $location->is_active ? 'Deactivate' : 'Activate' }}">
+                                        <i class="bi {{ $location->is_active ? 'bi-toggle-on' : 'bi-toggle-off' }}"></i>
+                                    </button>
                                 </form>
+                                <a href="{{ route('locations.edit', $location) }}" class="btn btn-sm btn-outline-github me-1" title="Edit">✏️</a>
+                                @if(auth()->user()->isSuperAdmin())
+                                    <form action="{{ route('locations.destroy', $location) }}" method="POST" class="d-inline-block">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="btn btn-sm btn-outline-github text-danger" title="Delete" onclick="return confirm('Are you sure?')">🗑️</button>
+                                    </form>
+                                @endif
                             </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="5" class="text-center py-4 text-muted">No locations found.</td>
+                            <td colspan="7" class="text-center py-4 text-muted">No locations found.</td>
                         </tr>
                     @endforelse
                 </tbody>

@@ -37,10 +37,21 @@
 
                 <div class="mb-3">
                     <label for="email" class="form-label small fw-semibold">Email address</label>
-                    <input type="email" id="email" name="email" 
-                           class="form-control form-control-sm @error('email') is-invalid @enderror" 
+                    <input type="email" id="email" name="email"
+                           class="form-control form-control-sm @error('email') is-invalid @enderror"
                            value="{{ old('email') }}" required>
                     @error('email')
+                        <div class="invalid-feedback small">{{ $message }}</div>
+                    @enderror
+                </div>
+
+                <div class="mb-3">
+                    <label for="alternative_email" class="form-label small fw-semibold">Alternative Email <span class="text-muted fw-normal">(optional)</span></label>
+                    <input type="email" id="alternative_email" name="alternative_email"
+                           class="form-control form-control-sm @error('alternative_email') is-invalid @enderror"
+                           value="{{ old('alternative_email') }}">
+                    <div class="form-text small">Used for password recovery if you ever get locked out.</div>
+                    @error('alternative_email')
                         <div class="invalid-feedback small">{{ $message }}</div>
                     @enderror
                 </div>

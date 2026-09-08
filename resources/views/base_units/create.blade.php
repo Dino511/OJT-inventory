@@ -48,7 +48,8 @@
                                    name="code"
                                    class="form-control form-control-sm @error('code') is-invalid @enderror"
                                    value="{{ old('code') }}"
-                                   placeholder="e.g. kg, pcs, ltr">
+                                   placeholder="e.g. kg, pcs, ltr"
+                                   required>
                             @error('code')
                                 <div class="invalid-feedback d-block small">{{ $message }}</div>
                             @enderror

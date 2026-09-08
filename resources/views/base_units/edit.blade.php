@@ -47,7 +47,8 @@
                                    id="code"
                                    name="code"
                                    class="form-control form-control-sm @error('code') is-invalid @enderror"
-                                   value="{{ old('code', $unit->code) }}">
+                                   value="{{ old('code', $unit->code) }}"
+                                   required>
                             @error('code')
                                 <div class="invalid-feedback d-block small">{{ $message }}</div>
                             @enderror

@@ -24,6 +24,44 @@
             {{ $c['to_location'] }}: {{ $c['destination_quantity_before'] }} <i class="bi bi-arrow-right mx-1"></i> {{ $c['destination_quantity_after'] }}
         </div>
     @endif
+@elseif($log->action === 'purchase_received' && !empty($log->changes))
+    @php $c = $log->changes; @endphp
+    <div class="text-secondary">
+        Received <strong>{{ $c['quantity'] }}</strong> unit(s) of <strong>{{ $log->product_name }}</strong>
+        from <strong>{{ $c['supplier'] }}</strong>
+        (<a href="{{ route('purchase-orders.show', $c['purchase_order_id']) }}">Purchase Order #{{ $c['purchase_order_id'] }}</a>).
+    </div>
+    <div class="small text-muted mt-1">
+        {{ $log->location_name }}: {{ $c['destination_quantity_before'] }} <i class="bi bi-arrow-right mx-1"></i> {{ $c['destination_quantity_after'] }}
+    </div>
+@elseif($log->action === 'transfer_dispatched' && !empty($log->changes))
+    @php $c = $log->changes; @endphp
+    <div class="text-secondary">
+        Dispatched <strong>{{ $c['quantity'] }}</strong> unit(s) of <strong>{{ $log->product_name }}</strong> from
+        <strong>{{ $c['from_location'] }}</strong> to <strong>{{ $c['to_location'] }}</strong>
+        (<a href="{{ route('stock-transfers.show', $c['stock_transfer_id']) }}">Transfer #{{ $c['stock_transfer_id'] }}</a>).
+    </div>
+    <div class="small text-muted mt-1">
+        {{ $c['from_location'] }}: {{ $c['source_quantity_before'] }} <i class="bi bi-arrow-right mx-1"></i> {{ $c['source_quantity_after'] }}
+    </div>
+@elseif($log->action === 'transfer_received' && !empty($log->changes))
+    @php $c = $log->changes; @endphp
+    <div class="text-secondary">
+        Received <strong>{{ $c['quantity'] }}</strong> unit(s) of <strong>{{ $log->product_name }}</strong> at <strong>{{ $log->location_name }}</strong>
+        (<a href="{{ route('stock-transfers.show', $c['stock_transfer_id']) }}">Transfer #{{ $c['stock_transfer_id'] }}</a>).
+    </div>
+    <div class="small text-muted mt-1">
+        {{ $log->location_name }}: {{ $c['destination_quantity_before'] }} <i class="bi bi-arrow-right mx-1"></i> {{ $c['destination_quantity_after'] }}
+    </div>
+@elseif($log->action === 'transfer_cancelled' && !empty($log->changes))
+    @php $c = $log->changes; @endphp
+    <div class="text-secondary">
+        Cancelled — <strong>{{ $c['quantity'] }}</strong> unit(s) of <strong>{{ $log->product_name }}</strong> returned to <strong>{{ $log->location_name }}</strong>
+        (<a href="{{ route('stock-transfers.show', $c['stock_transfer_id']) }}">Transfer #{{ $c['stock_transfer_id'] }}</a>).
+    </div>
+    <div class="small text-muted mt-1">
+        {{ $log->location_name }}: {{ $c['source_quantity_before'] }} <i class="bi bi-arrow-right mx-1"></i> {{ $c['source_quantity_after'] }}
+    </div>
 @elseif(!empty($log->changes))
     <ul class="list-unstyled mb-0">
         @foreach($log->changes as $field => $values)

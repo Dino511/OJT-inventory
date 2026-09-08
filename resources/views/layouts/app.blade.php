@@ -27,30 +27,39 @@
         /* Navbar Styles */
         .navbar-github { background-color: #24292f; border-bottom: 1px solid #d0d7de; }
         .navbar-github .navbar-brand { color: #ffffff; font-weight: 600; }
-        .navbar-github .nav-link { color: #d0d7de; font-size: 0.9rem; font-weight: 500; padding: 0.5rem 0.8rem; }
-        .navbar-github .nav-link:hover,
-        .navbar-github .nav-link.active { color: #ffffff; }
-        .navbar-github .nav-link.active { font-weight: 600; border-bottom: 2px solid #fd8c73; }
-
-        /* Secondary Navbar (module group dropdowns) */
-        .subnav-github { background-color: #ffffff; border-bottom: 1px solid #d0d7de; }
-        .subnav-github .nav-link { color: #57606a; font-size: 0.9rem; font-weight: 500; padding: 0.5rem 0.8rem; }
-        .subnav-github .nav-link:hover,
-        .subnav-github .nav-link.active { color: #1f883d; }
-        .subnav-github .nav-link.active { font-weight: 600; border-bottom: 2px solid #1f883d; }
+        .navbar-github .nav-link { color: #d0d7de; font-size: 0.9rem; font-weight: 500; padding: 0.5rem 0.8rem; border-radius: 6px; transition: background-color 0.15s ease, color 0.15s ease; }
+        .navbar-github .nav-link:hover { color: #ffffff; background-color: rgba(255,255,255,0.06); }
+        .navbar-github .nav-link.active { color: #ffffff; font-weight: 600; background-color: rgba(255,255,255,0.1); }
+        .navbar-github .dropdown-toggle::after { margin-left: 0.4rem; }
 
         /* Card & Table Custom Rules */
-        .card { border: 1px solid #d0d7de; border-radius: 6px; }
+        .card { border: 1px solid #d0d7de; border-radius: 8px; box-shadow: 0 1px 2px rgba(31,35,40,0.04), 0 4px 10px -6px rgba(31,35,40,0.10); }
         .card-header { background-color: #f6f8fa; border-bottom: 1px solid #d0d7de; }
         .table { margin-bottom: 0; }
         .table th { background-color: #f6f8fa; color: #636c76; font-size: 0.85rem; font-weight: 600; border-bottom: 1px solid #d0d7de; }
-        .table td { vertical-align: middle; border-bottom: 1px solid #d0d7de; color: #1f2328; font-size: 0.9rem; }
+        .table td { vertical-align: middle; border-bottom: 1px solid #d0d7de; color: #1f2328; font-size: 0.9rem; font-variant-numeric: tabular-nums; }
+        .table tbody tr:hover td { background-color: #f6f8fa; }
 
         /* Button Utility Classes */
-        .btn-github { background-color: #1f883d; color: #fff; font-weight: 500; border-radius: 6px; }
+        .btn-github { background-color: #1f883d; color: #fff; font-weight: 500; border-radius: 6px; transition: background-color 0.15s ease; }
         .btn-github:hover { background-color: #1a7f37; color: #fff; }
-        .btn-outline-github { border-color: #d0d7de; color: #24292f; background-color: #f6f8fa; }
+        .btn-outline-github { border-color: #d0d7de; color: #24292f; background-color: #f6f8fa; transition: background-color 0.15s ease, border-color 0.15s ease; }
         .btn-outline-github:hover { background-color: #f3f4f6; border-color: #d0d7de; color: #24292f; }
+        .btn-github:focus-visible, .btn-outline-github:focus-visible { outline: 2px solid #1f883d; outline-offset: 2px; }
+
+        /* Dashboard stat tiles */
+        .stat-tile {
+            display: flex; flex-direction: column; gap: 4px;
+            background-color: #ffffff; border: 1px solid #d0d7de; border-radius: 8px;
+            padding: 16px 18px; height: 100%;
+            box-shadow: 0 1px 2px rgba(31,35,40,0.04), 0 4px 10px -6px rgba(31,35,40,0.10);
+            transition: border-color 0.15s ease, transform 0.15s ease;
+        }
+        .stat-tile:hover { border-color: #1f883d; transform: translateY(-1px); }
+        .stat-tile .label { font-size: 0.78rem; font-weight: 600; letter-spacing: 0.02em; text-transform: uppercase; color: #636c76; }
+        .stat-tile .value { font-size: 1.6rem; font-weight: 700; color: #1f2328; font-variant-numeric: tabular-nums; }
+        .stat-tile-warn { border-color: #d1242f; }
+        .stat-tile-warn .value { color: #d1242f; }
 
         /* Dark mode overrides (Bootstrap 5.3 native color mode) */
         [data-bs-theme="dark"] body { background-color: #0d1117; color: #c9d1d9; }
@@ -58,13 +67,15 @@
         [data-bs-theme="dark"] .card-header { background-color: #161b22; border-color: #30363d; }
         [data-bs-theme="dark"] .table th { background-color: #161b22; color: #8b949e; border-color: #30363d; }
         [data-bs-theme="dark"] .table td { border-color: #30363d; color: #c9d1d9; }
+        [data-bs-theme="dark"] .table tbody tr:hover td { background-color: #161b22; }
         [data-bs-theme="dark"] .btn-outline-github { background-color: #161b22; border-color: #30363d; color: #c9d1d9; }
         [data-bs-theme="dark"] .btn-outline-github:hover { background-color: #21262d; }
-        [data-bs-theme="dark"] .subnav-github { background-color: #161b22; border-color: #30363d; }
-        [data-bs-theme="dark"] .subnav-github .nav-link { color: #8b949e; }
-        [data-bs-theme="dark"] .subnav-github .nav-link:hover,
-        [data-bs-theme="dark"] .subnav-github .nav-link.active { color: #3fb950; }
-        [data-bs-theme="dark"] .subnav-github .nav-link.active { border-bottom-color: #3fb950; }
+        [data-bs-theme="dark"] .stat-tile { background-color: #161b22; border-color: #30363d; }
+        [data-bs-theme="dark"] .stat-tile:hover { border-color: #3fb950; }
+        [data-bs-theme="dark"] .stat-tile .label { color: #8b949e; }
+        [data-bs-theme="dark"] .stat-tile .value { color: #c9d1d9; }
+        [data-bs-theme="dark"] .stat-tile-warn { border-color: #f85149; }
+        [data-bs-theme="dark"] .stat-tile-warn .value { color: #f85149; }
 
         /* Bootstrap's .text-dark is a fixed near-black color that does NOT
            adapt to dark mode (unlike .text-secondary/.text-muted), so it's
@@ -87,85 +98,218 @@
 </head>
 <body class="d-flex flex-column min-vh-100">
 
-    <!-- Top Navigation Bar: brand + user/settings only -->
-    <nav class="navbar navbar-expand navbar-dark navbar-github py-2">
-        <div class="container-lg d-flex justify-content-between align-items-center">
+    <nav class="navbar navbar-expand-lg navbar-dark navbar-github py-2 mb-4">
+        <div class="container-lg d-flex align-items-center justify-content-between flex-wrap gap-2">
 
-            <a class="navbar-brand d-flex align-items-center" href="{{ route('products.index') }}">
-                <i class="bi bi-box-seam-fill me-2 text-warning"></i>
-                <span>Inventory System</span>
-            </a>
+            <div class="d-flex align-items-center flex-wrap gap-2">
+                <a class="navbar-brand d-flex align-items-center me-1" href="{{ route('dashboard.index') }}">
+                    <i class="bi bi-box-seam-fill me-2 text-warning"></i>
+                    <span>Inventory System</span>
+                </a>
 
-            <!-- Right: User / Settings -->
+                @auth
+                    <ul class="navbar-nav flex-row flex-wrap gap-1 ms-2">
+                        <li class="nav-item">
+                            <a class="nav-link {{ request()->routeIs('dashboard.*') ? 'active' : '' }}" href="{{ route('dashboard.index') }}">
+                                <i class="bi bi-speedometer2 me-1"></i> {{ __('Dashboard') }}
+                            </a>
+                        </li>
+
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle {{ request()->routeIs(['companies.*', 'categories.*', 'locations.*', 'base-units.*', 'unit-conversions.*', 'suppliers.*']) ? 'active' : '' }}"
+                               href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="bi bi-database me-1"></i> {{ __('General Data') }}
+                            </a>
+                            <ul class="dropdown-menu">
+                                <li>
+                                    <a class="dropdown-item {{ request()->routeIs('companies.*') ? 'active' : '' }}" href="{{ route('companies.index') }}">
+                                        <i class="bi bi-building me-2"></i> {{ __('Companies') }}
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item {{ request()->routeIs('locations.*') ? 'active' : '' }}" href="{{ route('locations.index') }}">
+                                        <i class="bi bi-geo-alt me-2"></i> {{ __('Locations') }}
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item {{ request()->routeIs('suppliers.*') ? 'active' : '' }}" href="{{ route('suppliers.index') }}">
+                                        <i class="bi bi-truck me-2"></i> {{ __('Suppliers') }}
+                                    </a>
+                                </li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <a class="dropdown-item {{ request()->routeIs('categories.*') ? 'active' : '' }}" href="{{ route('categories.index') }}">
+                                        <i class="bi bi-tags me-2"></i> {{ __('Categories') }}
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item {{ request()->routeIs('base-units.*') ? 'active' : '' }}" href="{{ route('base-units.index') }}">
+                                        <i class="bi bi-rulers me-2"></i> {{ __('Base Units') }}
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item {{ request()->routeIs('unit-conversions.*') ? 'active' : '' }}" href="{{ route('unit-conversions.index') }}">
+                                        <i class="bi bi-arrow-left-right me-2"></i> {{ __('Unit Conversions') }}
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
+
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle {{ request()->routeIs(['products.*', 'inventory.*']) ? 'active' : '' }}"
+                               href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="bi bi-box-seam me-1"></i> {{ __('Inventory') }}
+                            </a>
+                            <ul class="dropdown-menu">
+                                <li>
+                                    <a class="dropdown-item {{ request()->routeIs('products.*') ? 'active' : '' }}" href="{{ route('products.index') }}">
+                                        <i class="bi bi-box me-2"></i> {{ __('Products') }}
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item {{ request()->routeIs('inventory.*') ? 'active' : '' }}" href="{{ route('inventory.index') }}">
+                                        <i class="bi bi-clipboard-data me-2"></i> {{ __('Stock') }}
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
+
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle {{ request()->routeIs(['purchase-orders.*', 'deliveries.*', 'stock-transfers.*']) ? 'active' : '' }}"
+                               href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="bi bi-cart me-1"></i> {{ __('PO & Delivery') }}
+                            </a>
+                            <ul class="dropdown-menu">
+                                <li>
+                                    <a class="dropdown-item {{ request()->routeIs('purchase-orders.*') ? 'active' : '' }}" href="{{ route('purchase-orders.index') }}">
+                                        <i class="bi bi-cart me-2"></i> {{ __('Product Order') }}
+                                    </a>
+                                </li>
+                                @if(auth()->user()->isSuperAdmin() || auth()->user()->isBusinessAdmin())
+                                    <li>
+                                        <a class="dropdown-item {{ request()->routeIs(['deliveries.*', 'stock-transfers.*']) ? 'active' : '' }}" href="{{ route('deliveries.index') }}">
+                                            <i class="bi bi-truck me-2"></i> {{ __('Delivery') }}
+                                        </a>
+                                    </li>
+                                @endif
+                            </ul>
+                        </li>
+
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle {{ request()->routeIs(['users.*', 'activity-log.*', 'reports.*']) ? 'active' : '' }}"
+                               href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="bi bi-shield-lock me-1"></i> {{ __('Admin') }}
+                            </a>
+                            <ul class="dropdown-menu">
+                                <li>
+                                    <a class="dropdown-item {{ request()->routeIs('reports.*') ? 'active' : '' }}" href="{{ route('reports.index') }}">
+                                        <i class="bi bi-bar-chart-line me-2"></i> {{ __('Graphs') }}
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item {{ request()->routeIs('activity-log.*') ? 'active' : '' }}" href="{{ route('activity-log.index') }}">
+                                        <i class="bi bi-clock-history me-2"></i> {{ __('History') }}
+                                    </a>
+                                </li>
+                                @if(auth()->user()->isSuperAdmin())
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li>
+                                        <a class="dropdown-item {{ request()->routeIs('users.*') ? 'active' : '' }}" href="{{ route('users.index') }}">
+                                            <i class="bi bi-people me-2"></i> {{ __('Users') }}
+                                        </a>
+                                    </li>
+                                @endif
+                            </ul>
+                        </li>
+                    </ul>
+                @endauth
+            </div>
+
             @auth
                 <div class="d-flex align-items-center gap-3">
-                    <span class="text-light small d-none d-md-inline">
-                        <i class="bi bi-person-circle me-1 text-secondary"></i>
-                        {{ Auth::user()->name }}
-                    </span>
+                    <div class="d-flex align-items-center gap-2">
+                        @php
+                            $roleBadge = match(Auth::user()->role) {
+                                'super_admin' => ['bg-danger-subtle text-danger', 'Super Admin'],
+                                'business_admin' => ['bg-primary-subtle text-primary', 'Business Admin'],
+                                default => ['bg-secondary-subtle text-secondary', 'Moderator'],
+                            };
+                        @endphp
+                        @if(Auth::user()->avatar)
+                            <img src="{{ Auth::user()->avatar_url }}" alt="{{ Auth::user()->name }}" class="rounded-circle border flex-shrink-0" style="width:36px;height:36px;object-fit:cover;">
+                        @else
+                            <div class="rounded-circle bg-secondary-subtle border d-flex align-items-center justify-content-center flex-shrink-0" style="width:36px;height:36px;">
+                                <i class="bi bi-person-fill text-secondary fs-5"></i>
+                            </div>
+                        @endif
+                        <div class="text-light small lh-sm">
+                            <div>{{ Auth::user()->name }}</div>
+                            <span class="badge {{ $roleBadge[0] }} border">{{ $roleBadge[1] }}</span>
+                        </div>
+                    </div>
 
                     <div class="dropdown">
                         <button class="btn btn-sm btn-outline-light px-2 py-1 dropdown-toggle {{ request()->routeIs('profile.*') ? 'active' : '' }}"
-                                type="button" data-bs-toggle="dropdown" aria-expanded="false" style="font-size: 0.8rem;">
-                            <i class="bi bi-gear-fill me-1"></i> {{ __('Settings') }}
+                                type="button" data-bs-toggle="dropdown" aria-expanded="false" title="{{ __('Settings') }}" aria-label="{{ __('Settings') }}">
+                            <i class="bi bi-gear-fill"></i>
                         </button>
                         <ul class="dropdown-menu dropdown-menu-end">
-                            <li>
-                                <a class="dropdown-item {{ request()->routeIs('profile.*') ? 'active' : '' }}" href="{{ route('profile.edit') }}">
-                                    <i class="bi bi-person-circle me-2"></i> {{ __('My Profile') }}
-                                </a>
-                            </li>
+                                    <li>
+                                        <a class="dropdown-item {{ request()->routeIs('profile.*') ? 'active' : '' }}" href="{{ route('profile.edit') }}">
+                                            <i class="bi bi-person-circle me-2"></i> {{ __('My Profile') }}
+                                        </a>
+                                    </li>
 
-                            <li><hr class="dropdown-divider"></li>
-                            <li><h6 class="dropdown-header">{{ __('Language') }}</h6></li>
-                            <li>
-                                <form action="{{ route('locale.set', 'en') }}" method="POST">
-                                    @csrf
-                                    <button type="submit" class="dropdown-item {{ app()->getLocale() === 'en' ? 'active' : '' }}">
-                                        <i class="bi bi-check-lg me-2 {{ app()->getLocale() === 'en' ? '' : 'invisible' }}"></i> {{ __('English') }}
-                                    </button>
-                                </form>
-                            </li>
-                            <li>
-                                <form action="{{ route('locale.set', 'tl') }}" method="POST">
-                                    @csrf
-                                    <button type="submit" class="dropdown-item {{ app()->getLocale() === 'tl' ? 'active' : '' }}">
-                                        <i class="bi bi-check-lg me-2 {{ app()->getLocale() === 'tl' ? '' : 'invisible' }}"></i> {{ __('Tagalog') }}
-                                    </button>
-                                </form>
-                            </li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><h6 class="dropdown-header">{{ __('Language') }}</h6></li>
+                                    <li>
+                                        <form action="{{ route('locale.set', 'en') }}" method="POST">
+                                            @csrf
+                                            <button type="submit" class="dropdown-item {{ app()->getLocale() === 'en' ? 'active' : '' }}">
+                                                <i class="bi bi-check-lg me-2 {{ app()->getLocale() === 'en' ? '' : 'invisible' }}"></i> {{ __('English') }}
+                                            </button>
+                                        </form>
+                                    </li>
+                                    <li>
+                                        <form action="{{ route('locale.set', 'tl') }}" method="POST">
+                                            @csrf
+                                            <button type="submit" class="dropdown-item {{ app()->getLocale() === 'tl' ? 'active' : '' }}">
+                                                <i class="bi bi-check-lg me-2 {{ app()->getLocale() === 'tl' ? '' : 'invisible' }}"></i> {{ __('Tagalog') }}
+                                            </button>
+                                        </form>
+                                    </li>
 
-                            <li><hr class="dropdown-divider"></li>
-                            <li><h6 class="dropdown-header">{{ __('Theme') }}</h6></li>
-                            <li>
-                                <button type="button" class="dropdown-item" data-theme-option="light">
-                                    <i class="bi bi-check-lg me-2 theme-check" data-theme-check="light"></i>
-                                    <i class="bi bi-sun me-1"></i> {{ __('Light') }}
-                                </button>
-                            </li>
-                            <li>
-                                <button type="button" class="dropdown-item" data-theme-option="dark">
-                                    <i class="bi bi-check-lg me-2 theme-check" data-theme-check="dark"></i>
-                                    <i class="bi bi-moon-stars me-1"></i> {{ __('Dark') }}
-                                </button>
-                            </li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><h6 class="dropdown-header">{{ __('Theme') }}</h6></li>
+                                    <li>
+                                        <button type="button" class="dropdown-item" data-theme-option="light">
+                                            <i class="bi bi-check-lg me-2 theme-check" data-theme-check="light"></i>
+                                            <i class="bi bi-sun me-1"></i> {{ __('Light') }}
+                                        </button>
+                                    </li>
+                                    <li>
+                                        <button type="button" class="dropdown-item" data-theme-option="dark">
+                                            <i class="bi bi-check-lg me-2 theme-check" data-theme-check="dark"></i>
+                                            <i class="bi bi-moon-stars me-1"></i> {{ __('Dark') }}
+                                        </button>
+                                    </li>
 
-                            <li><hr class="dropdown-divider"></li>
-                            <li>
-                                <button type="button" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#contactUsModal">
-                                    <i class="bi bi-envelope me-2"></i> {{ __('Contact Us') }}
-                                </button>
-                            </li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li>
+                                        <button type="button" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#contactUsModal">
+                                            <i class="bi bi-envelope me-2"></i> {{ __('Contact Us') }}
+                                        </button>
+                                    </li>
 
-                            <li><hr class="dropdown-divider"></li>
-                            <li>
-                                <form action="{{ route('logout') }}" method="POST">
-                                    @csrf
-                                    <button type="submit" class="dropdown-item text-danger">
-                                        <i class="bi bi-box-arrow-right me-2"></i> {{ __('Sign out') }}
-                                    </button>
-                                </form>
-                            </li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li>
+                                        <form action="{{ route('logout') }}" method="POST">
+                                            @csrf
+                                            <button type="submit" class="dropdown-item text-danger">
+                                                <i class="bi bi-box-arrow-right me-2"></i> {{ __('Sign out') }}
+                                            </button>
+                                        </form>
+                                    </li>
                         </ul>
                     </div>
                 </div>
@@ -173,95 +317,6 @@
 
         </div>
     </nav>
-
-    <!-- Secondary Navigation Bar: module groups -->
-    @auth
-        <nav class="navbar navbar-expand subnav-github mb-4 py-1">
-            <div class="container-lg">
-                <ul class="navbar-nav flex-row gap-1">
-                    <!-- General Data: reference/master data configured once, rarely changed -->
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle {{ request()->routeIs(['companies.*', 'categories.*', 'locations.*', 'base-units.*', 'unit-conversions.*']) ? 'active' : '' }}"
-                           href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            <i class="bi bi-database me-1"></i> {{ __('General Data') }}
-                        </a>
-                        <ul class="dropdown-menu">
-                            <li>
-                                <a class="dropdown-item {{ request()->routeIs('companies.*') ? 'active' : '' }}" href="{{ route('companies.index') }}">
-                                    <i class="bi bi-building me-2"></i> {{ __('Companies') }}
-                                </a>
-                            </li>
-                            <li>
-                                <a class="dropdown-item {{ request()->routeIs('categories.*') ? 'active' : '' }}" href="{{ route('categories.index') }}">
-                                    <i class="bi bi-tags me-2"></i> {{ __('Categories') }}
-                                </a>
-                            </li>
-                            <li>
-                                <a class="dropdown-item {{ request()->routeIs('locations.*') ? 'active' : '' }}" href="{{ route('locations.index') }}">
-                                    <i class="bi bi-geo-alt me-2"></i> {{ __('Locations') }}
-                                </a>
-                            </li>
-                            <li>
-                                <a class="dropdown-item {{ request()->routeIs('base-units.*') ? 'active' : '' }}" href="{{ route('base-units.index') }}">
-                                    <i class="bi bi-rulers me-2"></i> {{ __('Base Units') }}
-                                </a>
-                            </li>
-                            <li>
-                                <a class="dropdown-item {{ request()->routeIs('unit-conversions.*') ? 'active' : '' }}" href="{{ route('unit-conversions.index') }}">
-                                    <i class="bi bi-arrow-left-right me-2"></i> {{ __('Unit Conversions') }}
-                                </a>
-                            </li>
-                        </ul>
-                    </li>
-
-                    <!-- Inventory: day-to-day catalog & stock operations -->
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle {{ request()->routeIs(['products.*', 'inventory.*']) ? 'active' : '' }}"
-                           href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            <i class="bi bi-box-seam me-1"></i> {{ __('Inventory') }}
-                        </a>
-                        <ul class="dropdown-menu">
-                            <li>
-                                <a class="dropdown-item {{ request()->routeIs('products.*') ? 'active' : '' }}" href="{{ route('products.index') }}">
-                                    <i class="bi bi-box me-2"></i> {{ __('Products') }}
-                                </a>
-                            </li>
-                            <li>
-                                <a class="dropdown-item {{ request()->routeIs('inventory.*') ? 'active' : '' }}" href="{{ route('inventory.index') }}">
-                                    <i class="bi bi-clipboard-data me-2"></i> {{ __('Stock') }}
-                                </a>
-                            </li>
-                        </ul>
-                    </li>
-
-                    <!-- Admin: user access & system-wide oversight -->
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle {{ request()->routeIs(['users.*', 'activity-log.*', 'reports.*']) ? 'active' : '' }}"
-                           href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            <i class="bi bi-shield-lock me-1"></i> {{ __('Admin') }}
-                        </a>
-                        <ul class="dropdown-menu">
-                            <li>
-                                <a class="dropdown-item {{ request()->routeIs('users.*') ? 'active' : '' }}" href="{{ route('users.index') }}">
-                                    <i class="bi bi-people me-2"></i> {{ __('Users') }}
-                                </a>
-                            </li>
-                            <li>
-                                <a class="dropdown-item {{ request()->routeIs('activity-log.*') ? 'active' : '' }}" href="{{ route('activity-log.index') }}">
-                                    <i class="bi bi-clock-history me-2"></i> {{ __('History') }}
-                                </a>
-                            </li>
-                            <li>
-                                <a class="dropdown-item {{ request()->routeIs('reports.*') ? 'active' : '' }}" href="{{ route('reports.index') }}">
-                                    <i class="bi bi-bar-chart-line me-2"></i> {{ __('Graphs') }}
-                                </a>
-                            </li>
-                        </ul>
-                    </li>
-                </ul>
-            </div>
-        </nav>
-    @endauth
 
     <!-- Contact Us Modal -->
     @auth

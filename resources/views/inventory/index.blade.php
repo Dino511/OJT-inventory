@@ -62,7 +62,7 @@
                                 QUANTITY <i class="bi {{ $numIcon('quantity') }} small"></i>
                             </a>
                         </th>
-                        <th class="text-end" style="width: 230px;">ACTIONS</th>
+                        <th class="text-end" style="width: 270px;">ACTIONS</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -75,7 +75,12 @@
                                 <span class="fw-semibold">{{ $item->product->name ?? 'N/A' }}</span>
                             </td>
                             <td>
-                                <span class="text-secondary">{{ $item->location->name ?? 'N/A' }}</span>
+                                <span class="text-secondary">
+                                    {{ $item->location->name ?? 'N/A' }}
+                                    @if($item->location)
+                                        <span class="badge bg-light text-secondary border ms-1">{{ $item->location->isWarehouse() ? 'Warehouse' : 'Store' }}</span>
+                                    @endif
+                                </span>
                             </td>
                             <td>
                                 <span class="badge {{ ($item->quantity ?? $item->stock ?? 0) > 10 ? 'bg-success-subtle text-success border border-success-subtle' : 'bg-danger-subtle text-danger border border-danger-subtle' }} px-2 py-1">
@@ -90,9 +95,18 @@
                                     <i class="bi bi-pencil me-1"></i> Edit
                                 </a>
                                 @if(($item->quantity ?? 0) > 0)
-                                    <a href="{{ route('inventory.transfer', $item->id) }}" class="btn btn-outline-github btn-sm" title="Transfer stock to another location">
+                                    <a href="{{ route('inventory.transfer', $item->id) }}" class="btn btn-outline-github btn-sm me-1" title="Transfer stock to another location">
                                         <i class="bi bi-arrow-left-right"></i>
                                     </a>
+                                @endif
+                                @if(auth()->user()->isSuperAdmin())
+                                    <form action="{{ route('inventory.destroy', $item->id) }}" method="POST" class="d-inline-block" onsubmit="return confirm('Delete this stock record? This cannot be undone.');">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="btn btn-outline-danger btn-sm" title="Delete">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </form>
                                 @endif
                             </td>
                         </tr>
