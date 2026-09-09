@@ -32,16 +32,26 @@ class SupplierController extends Controller
         '+974' => 'Qatar (+974)',
     ];
 
+    /**
+     * Name prefixes offered next to each Contact Person field.
+     */
+    public const NAME_PREFIXES = ['Mr.', 'Ms.', 'Mrs.', 'Dr.', 'Engr.', 'Atty.'];
+
     public function index()
     {
-        $suppliers = Supplier::orderBy('name')->get();
+        $suppliers = Supplier::withCount([
+            'products as active_products_count' => fn ($query) => $query->where('is_active', true),
+        ])->orderBy('name')->get();
 
         return view('suppliers.index', compact('suppliers'));
     }
 
     public function create()
     {
-        return view('suppliers.create', ['countryCodes' => self::COUNTRY_CODES]);
+        return view('suppliers.create', [
+            'countryCodes' => self::COUNTRY_CODES,
+            'namePrefixes' => self::NAME_PREFIXES,
+        ]);
     }
 
     public function store(Request $request)
@@ -58,8 +68,11 @@ class SupplierController extends Controller
         return view('suppliers.edit', [
             'supplier' => $supplier,
             'countryCodes' => self::COUNTRY_CODES,
+            'namePrefixes' => self::NAME_PREFIXES,
             'phone' => self::splitPhone($supplier->phone),
             'secondaryPhone' => self::splitPhone($supplier->secondary_phone),
+            'contactPerson' => self::splitName($supplier->contact_person),
+            'secondaryContactPerson' => self::splitName($supplier->secondary_contact_person),
         ]);
     }
 
@@ -96,18 +109,30 @@ class SupplierController extends Controller
     private function validatePayload(Request $request): array
     {
         $codes = array_keys(self::COUNTRY_CODES);
+        $prefixes = self::NAME_PREFIXES;
 
         $validated = $request->validate([
             'name' => 'required|string|max:150',
-            'contact_person' => 'required|string|max:150',
-            'secondary_contact_person' => 'nullable|string|max:150',
+            'contact_person_prefix' => ['nullable', 'in:' . implode(',', $prefixes)],
+            'contact_person_name' => 'required|string|max:150',
+            'secondary_contact_person_prefix' => ['nullable', 'in:' . implode(',', $prefixes)],
+            'secondary_contact_person_name' => 'nullable|string|max:150',
             'phone_country_code' => ['required', 'in:' . implode(',', $codes)],
-            'phone_number' => 'required|string|max:20|regex:/^[0-9\-\s]{6,20}$/',
+            'phone_number' => ['required', 'string', 'regex:/^[0-9]{9}$/'],
             'secondary_phone_country_code' => ['nullable', 'in:' . implode(',', $codes)],
-            'secondary_phone_number' => 'nullable|string|max:20|regex:/^[0-9\-\s]{6,20}$/',
+            'secondary_phone_number' => ['nullable', 'string', 'regex:/^[0-9]{9}$/'],
             'email' => 'nullable|email|max:255',
             'address' => 'required|string|max:500',
+        ], [
+            'phone_number.regex' => 'The phone number must be exactly 9 digits (excluding the country code).',
+            'secondary_phone_number.regex' => 'The secondary phone number must be exactly 9 digits (excluding the country code).',
         ]);
+
+        $validated['contact_person'] = trim(($validated['contact_person_prefix'] ?? '') . ' ' . $validated['contact_person_name']);
+
+        $validated['secondary_contact_person'] = ! empty($validated['secondary_contact_person_name'])
+            ? trim(($validated['secondary_contact_person_prefix'] ?? '') . ' ' . $validated['secondary_contact_person_name'])
+            : null;
 
         $validated['phone'] = trim($validated['phone_country_code'] . ' ' . $validated['phone_number']);
 
@@ -116,6 +141,7 @@ class SupplierController extends Controller
             : null;
 
         return collect($validated)->except([
+            'contact_person_prefix', 'contact_person_name', 'secondary_contact_person_prefix', 'secondary_contact_person_name',
             'phone_country_code', 'phone_number', 'secondary_phone_country_code', 'secondary_phone_number',
         ])->toArray();
     }
@@ -139,5 +165,26 @@ class SupplierController extends Controller
         }
 
         return ['code' => '+63', 'number' => $stored];
+    }
+
+    /**
+     * Splits a stored "<Prefix> <Name>" string back into its two parts so
+     * the edit form can repopulate the prefix dropdown and the plain name
+     * input separately. Falls back to no prefix for legacy values saved
+     * before the prefix dropdown existed.
+     */
+    private static function splitName(?string $stored): array
+    {
+        if (! $stored) {
+            return ['prefix' => '', 'name' => ''];
+        }
+
+        foreach (self::NAME_PREFIXES as $prefix) {
+            if (str_starts_with($stored, $prefix . ' ')) {
+                return ['prefix' => $prefix, 'name' => substr($stored, strlen($prefix) + 1)];
+            }
+        }
+
+        return ['prefix' => '', 'name' => $stored];
     }
 }

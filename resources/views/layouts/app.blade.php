@@ -25,7 +25,7 @@
         body { background-color: #f6f8fa; color: #1f2328; }
 
         /* Navbar Styles */
-        .navbar-github { background-color: #24292f; border-bottom: 1px solid #d0d7de; }
+        .navbar-github { background-color: #24292f; border-bottom: 1px solid #d0d7de; position: sticky; top: 0; z-index: 1030; }
         .navbar-github .navbar-brand { color: #ffffff; font-weight: 600; }
         .navbar-github .nav-link { color: #d0d7de; font-size: 0.9rem; font-weight: 500; padding: 0.5rem 0.8rem; border-radius: 6px; transition: background-color 0.15s ease, color 0.15s ease; }
         .navbar-github .nav-link:hover { color: #ffffff; background-color: rgba(255,255,255,0.06); }
@@ -99,22 +99,19 @@
 <body class="d-flex flex-column min-vh-100">
 
     <nav class="navbar navbar-expand-lg navbar-dark navbar-github py-2 mb-4">
-        <div class="container-lg d-flex align-items-center justify-content-between flex-wrap gap-2">
+        <div class="container-lg">
+            <a class="navbar-brand d-flex align-items-center" href="{{ route('dashboard.index') }}">
+                <i class="bi bi-box-seam-fill me-2 text-warning"></i>
+                <span>Inventory System</span>
+            </a>
 
-            <div class="d-flex align-items-center flex-wrap gap-2">
-                <a class="navbar-brand d-flex align-items-center me-1" href="{{ route('dashboard.index') }}">
-                    <i class="bi bi-box-seam-fill me-2 text-warning"></i>
-                    <span>Inventory System</span>
-                </a>
+            @auth
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav" aria-controls="mainNav" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
 
-                @auth
-                    <ul class="navbar-nav flex-row flex-wrap gap-1 ms-2">
-                        <li class="nav-item">
-                            <a class="nav-link {{ request()->routeIs('dashboard.*') ? 'active' : '' }}" href="{{ route('dashboard.index') }}">
-                                <i class="bi bi-speedometer2 me-1"></i> {{ __('Dashboard') }}
-                            </a>
-                        </li>
-
+                <div class="collapse navbar-collapse" id="mainNav">
+                    <ul class="navbar-nav flex-row flex-wrap gap-1 ms-lg-3">
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle {{ request()->routeIs(['companies.*', 'categories.*', 'locations.*', 'base-units.*', 'unit-conversions.*', 'suppliers.*']) ? 'active' : '' }}"
                                href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
@@ -222,13 +219,10 @@
                             </ul>
                         </li>
                     </ul>
-                @endauth
-            </div>
 
-            @auth
-                <div class="d-flex align-items-center gap-3">
-                    <div class="d-flex align-items-center gap-2">
-                        @php
+                    <div class="d-flex align-items-center gap-3 mt-3 mt-lg-0 ms-lg-auto">
+                        <div class="d-flex align-items-center gap-2">
+                            @php
                             $roleBadge = match(Auth::user()->role) {
                                 'super_admin' => ['bg-danger-subtle text-danger', 'Super Admin'],
                                 'business_admin' => ['bg-primary-subtle text-primary', 'Business Admin'],
@@ -300,6 +294,16 @@
                                             <i class="bi bi-envelope me-2"></i> {{ __('Contact Us') }}
                                         </button>
                                     </li>
+                                    <li>
+                                        <button type="button" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#faqModal">
+                                            <i class="bi bi-question-circle me-2"></i> {{ __('FAQ') }}
+                                        </button>
+                                    </li>
+                                    <li>
+                                        <button type="button" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#userGuideModal">
+                                            <i class="bi bi-book me-2"></i> {{ __('User Guide') }}
+                                        </button>
+                                    </li>
 
                                     <li><hr class="dropdown-divider"></li>
                                     <li>
@@ -312,9 +316,9 @@
                                     </li>
                         </ul>
                     </div>
+                    </div>
                 </div>
             @endauth
-
         </div>
     </nav>
 
@@ -348,12 +352,138 @@
         </div>
     @endauth
 
+    <!-- FAQ Modal -->
+    @auth
+        <div class="modal fade" id="faqModal" tabindex="-1" aria-labelledby="faqModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="faqModalLabel">
+                            <i class="bi bi-question-circle me-1"></i> {{ __('Frequently Asked Questions') }}
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('Close') }}"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="accordion accordion-flush" id="faqAccordion">
+                            @php
+                                $faqs = [
+                                    [
+                                        'q' => 'What\'s the difference between a Warehouse and a Store location?',
+                                        'a' => 'A Warehouse receives incoming stock — every Purchase Order is delivered to a Warehouse-type location. A Store is a selling location — POS only ever sells from Store-type locations. Stock moves from a Warehouse into a Store via a Stock Transfer.',
+                                    ],
+                                    [
+                                        'q' => 'How do I get stock from a Warehouse into a Store so it can be sold?',
+                                        'a' => 'Go to Inventory → Stock, find the product at the warehouse, and click the Transfer icon. Warehouse→Store transfers are tracked as a delivery: they sit "Pending" until someone confirms receipt in Delivery Tracking, at which point the store\'s stock actually increases.',
+                                    ],
+                                    [
+                                        'q' => 'Why can\'t I select a Store as the "Deliver To" location on a Purchase Order?',
+                                        'a' => 'Purchase Orders can only be received into a Warehouse — this keeps supplier deliveries verified before they\'re sellable. Once received, use a Stock Transfer to move it into a Store.',
+                                    ],
+                                    [
+                                        'q' => 'What\'s the difference between Super Admin, Business Admin, and Moderator?',
+                                        'a' => 'Super Admin has full access to both this system and POS, including Users management. Business Admin has the same access except Users management. Moderator is POS-only and can\'t log into this Inventory system at all.',
+                                    ],
+                                    [
+                                        'q' => 'Why is a product missing from the Purchase Order product list?',
+                                        'a' => 'Two filters apply: the product must belong to the Company you selected, and — once you pick a Supplier — it must also be linked to that Supplier on the product\'s own edit page (see the Suppliers checkboxes there).',
+                                    ],
+                                    [
+                                        'q' => 'How do I get a product to show up under "Needs Attention" on the Dashboard?',
+                                        'a' => 'Set a Reorder Point greater than 0 on that product (Products → Edit). Once its stock at any location drops to or below that number, it appears there automatically.',
+                                    ],
+                                    [
+                                        'q' => 'I deleted or can\'t delete a Purchase Order / Stock Transfer / Unit Conversion — why?',
+                                        'a' => 'These have safety checks: a received Purchase Order or Stock Transfer can only be deleted by a Super Admin (to preserve stock history); a pending Stock Transfer must be Cancelled first (its stock is already in transit); and a Base Unit or Unit Conversion in use by an active product can\'t be deleted at all.',
+                                    ],
+                                    [
+                                        'q' => 'How do I reset my password if I forget it?',
+                                        'a' => 'Use "Forgot password?" on the sign-in page. The reset code is sent to your Alternative Email if you\'ve set one (Profile page), otherwise to your primary login email.',
+                                    ],
+                                    [
+                                        'q' => 'How do I see a user\'s full details without opening the edit form?',
+                                        'a' => 'On the Users page (Super Admin only), click the eye icon in the Actions column. It opens a read-only profile with that user\'s companies, active company, POS location, and other details — no risk of accidentally changing anything.',
+                                    ],
+                                ];
+                            @endphp
+                            @foreach($faqs as $i => $faq)
+                                <div class="accordion-item">
+                                    <h2 class="accordion-header">
+                                        <button class="accordion-button collapsed small fw-semibold" type="button" data-bs-toggle="collapse" data-bs-target="#faqItem{{ $i }}">
+                                            {{ $faq['q'] }}
+                                        </button>
+                                    </h2>
+                                    <div id="faqItem{{ $i }}" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                                        <div class="accordion-body small text-secondary">{{ $faq['a'] }}</div>
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline-github btn-sm" data-bs-dismiss="modal">{{ __('Close') }}</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    @endauth
+
+    <!-- User Guide Modal -->
+    @auth
+        <div class="modal fade" id="userGuideModal" tabindex="-1" aria-labelledby="userGuideModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="userGuideModalLabel">
+                            <i class="bi bi-book me-1"></i> {{ __('User Guide') }}
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('Close') }}"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p class="text-secondary small">A walkthrough of how stock moves through this system, from supplier to sale.</p>
+
+                        <h6 class="fw-bold mt-3">The flow, end to end</h6>
+                        <p class="small text-secondary mb-2">
+                            <strong>Supplier</strong> → <strong>Purchase Order</strong> (received into a <strong>Warehouse</strong>) →
+                            <strong>Stock Transfer</strong> (moved into a <strong>Store</strong>) → <strong>POS Sale</strong>.
+                            Every step is logged in the Activity Log.
+                        </p>
+
+                        <h6 class="fw-bold mt-3">1. Set up your foundation data</h6>
+                        <p class="small text-secondary mb-1">Under <strong>General Data</strong>: Companies and Locations first (tag each Location as Warehouse or Store), then Suppliers, Categories, Base Units, and Unit Conversions.</p>
+
+                        <h6 class="fw-bold mt-3">2. Add products</h6>
+                        <p class="small text-secondary mb-1">Under <strong>Inventory → Products</strong>: set a base unit, an optional unit conversion, a reorder point (for low-stock alerts), and which Suppliers can provide it.</p>
+
+                        <h6 class="fw-bold mt-3">3. Order stock</h6>
+                        <p class="small text-secondary mb-1">Under <strong>PO & Delivery → Product Order</strong>: create a Purchase Order against a Supplier and Warehouse, then mark it Received once the delivery arrives — this increases the warehouse's stock.</p>
+
+                        <h6 class="fw-bold mt-3">4. Move stock to a store</h6>
+                        <p class="small text-secondary mb-1">Under <strong>Inventory → Stock</strong>: transfer from a Warehouse to a Store. This creates a Pending delivery — confirm it in <strong>PO & Delivery → Delivery</strong> once the stock physically arrives at the store.</p>
+
+                        <h6 class="fw-bold mt-3">5. Track everything</h6>
+                        <p class="small text-secondary mb-1">The <strong>Dashboard</strong> shows low-stock alerts, pending deliveries, and recent activity at a glance. <strong>Admin → History</strong> and <strong>Graphs</strong> give the full audit trail and reporting.</p>
+
+                        <h6 class="fw-bold mt-3">6. Manage user accounts (Super Admin)</h6>
+                        <p class="small text-secondary mb-1">Under <strong>Admin → Users</strong>: create accounts, assign a Role and Companies, and lock Moderators to a POS Location. Click the eye icon on any row to view that user's full profile read-only, or the pencil icon to edit it.</p>
+
+                        <div class="alert alert-light border small mt-3 mb-0">
+                            Still stuck? Check the <a href="#" class="switch-modal-link" data-target="#faqModal">FAQ</a> or use <a href="#" class="switch-modal-link" data-target="#contactUsModal">Contact Us</a>.
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline-github btn-sm" data-bs-dismiss="modal">{{ __('Close') }}</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    @endauth
+
     <!-- Main Page Content -->
     <main class="container-lg mb-5 flex-grow-1">
 
         <!-- Dynamic Flash Notification Alerts -->
         @if(session('success'))
-            <div class="alert alert-success alert-dismissible fade show border-0 shadow-sm mb-3" role="alert">
+            <div class="alert alert-success alert-dismissible fade show border-0 shadow-sm mb-3" role="alert" data-auto-dismiss="5000">
                 <i class="bi bi-check-circle-fill me-2"></i> {{ session('success') }}
                 <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
             </div>
@@ -374,7 +504,7 @@
         @endif
 
         @if(session('status'))
-            <div class="alert alert-info alert-dismissible fade show border-0 shadow-sm mb-3" role="alert">
+            <div class="alert alert-info alert-dismissible fade show border-0 shadow-sm mb-3" role="alert" data-auto-dismiss="5000">
                 <i class="bi bi-info-circle-fill me-2"></i> {{ session('status') }}
                 <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
             </div>
@@ -402,6 +532,9 @@
     <!-- Bootstrap 5 JavaScript Bundle -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
+    <!-- Alpine.js — used for lightweight, reload-free interactivity (e.g. client-side table sorting) -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js"></script>
+
     <!-- Theme Toggle -->
     <script>
         (function () {
@@ -425,6 +558,51 @@
             });
 
             applyThemeUI();
+
+            // Switch from one help modal straight to another: dismiss the
+            // current one, then show the target once it's fully hidden —
+            // Bootstrap doesn't support dismiss+show chained on one click.
+            document.querySelectorAll('.switch-modal-link').forEach(function (link) {
+                link.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    var currentModalEl = this.closest('.modal');
+                    var targetEl = document.querySelector(this.dataset.target);
+                    if (!currentModalEl || !targetEl) return;
+
+                    var currentModal = bootstrap.Modal.getOrCreateInstance(currentModalEl);
+                    currentModalEl.addEventListener('hidden.bs.modal', function onHidden() {
+                        currentModalEl.removeEventListener('hidden.bs.modal', onHidden);
+                        bootstrap.Modal.getOrCreateInstance(targetEl).show();
+                    });
+                    currentModal.hide();
+                });
+            });
+
+            // Auto-dismiss success/info flash banners after 5s — errors and
+            // warnings stay put until the user closes them, since those
+            // need to actually be read/acted on, not just glanced at.
+            document.querySelectorAll('[data-auto-dismiss]').forEach(function (alertEl) {
+                var delay = parseInt(alertEl.dataset.autoDismiss, 10) || 5000;
+                setTimeout(function () {
+                    bootstrap.Alert.getOrCreateInstance(alertEl)?.close();
+                }, delay);
+            });
+
+            // Show/hide password toggle — same eye-icon pattern as the
+            // standalone reset-password page, just reusable here for any
+            // password field that opts in with a .toggle-password button.
+            document.querySelectorAll('.toggle-password').forEach(function (button) {
+                button.addEventListener('click', function () {
+                    var input = document.getElementById(this.dataset.target);
+                    var icon = this.querySelector('i');
+                    var showing = input.type === 'text';
+
+                    input.type = showing ? 'password' : 'text';
+                    icon.classList.toggle('bi-eye', showing);
+                    icon.classList.toggle('bi-eye-slash', !showing);
+                    this.setAttribute('aria-label', showing ? 'Show password' : 'Hide password');
+                });
+            });
         })();
     </script>
 

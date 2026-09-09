@@ -32,7 +32,7 @@
                         <th scope="col">STATUS</th>
                         <th scope="col">COMPANIES</th>
                         <th scope="col">LOCATION</th>
-                        <th scope="col" class="text-end" style="width: 180px;">ACTIONS</th>
+                        <th scope="col" class="text-end" style="width: 220px;">ACTIONS</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -97,6 +97,22 @@
                                             <i class="bi {{ $user->is_active ? 'bi-toggle-on' : 'bi-toggle-off' }}"></i>
                                         </button>
                                     </form>
+                                    <button type="button" class="btn btn-outline-github" title="View Profile"
+                                            data-bs-toggle="modal" data-bs-target="#userProfileModal"
+                                            data-user-id="{{ $user->id }}"
+                                            data-user-name="{{ $user->name }}"
+                                            data-user-email="{{ $user->email }}"
+                                            data-user-alt-email="{{ $user->alternative_email ?? '' }}"
+                                            data-user-role="{{ $roleBadge[1] }}"
+                                            data-user-role-badge="{{ $roleBadge[0] }}"
+                                            data-user-active="{{ $user->is_active ? '1' : '0' }}"
+                                            data-user-avatar="{{ $user->avatar_url ?? '' }}"
+                                            data-user-companies="{{ $user->companies->pluck('name')->implode(', ') ?: 'N/A' }}"
+                                            data-user-active-company="{{ optional($user->company)->name ?? '' }}"
+                                            data-user-location="{{ $user->isModerator() ? (optional($user->location)->name ?? 'Not assigned') : '—' }}"
+                                            data-user-created="{{ $user->created_at?->format('M d, Y') }}">
+                                        <i class="bi bi-eye"></i>
+                                    </button>
                                     <a href="{{ route('users.edit', $user->id) }}" class="btn btn-outline-github" title="Edit">
                                         <i class="bi bi-pencil"></i>
                                     </a>
@@ -122,4 +138,93 @@
             </table>
         </div>
     </div>
+
+    <!-- View Profile Modal (shared, populated on open) -->
+    <div class="modal fade" id="userProfileModal" tabindex="-1" aria-labelledby="userProfileModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold" id="userProfileModalLabel">User Profile</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="text-center mb-3">
+                        <img id="profileAvatarImg" src="" alt="" class="rounded-circle border d-none" style="width: 72px; height: 72px; object-fit: cover;">
+                        <div id="profileAvatarPlaceholder" class="rounded-circle bg-secondary-subtle border d-flex align-items-center justify-content-center mx-auto" style="width: 72px; height: 72px;">
+                            <i class="bi bi-person-fill text-secondary" style="font-size: 1.8rem;"></i>
+                        </div>
+                        <h5 class="fw-bold mt-2 mb-0" id="profileName"></h5>
+                        <span class="badge border font-monospace" id="profileId"></span>
+                    </div>
+                    <dl class="row mb-0 small">
+                        <dt class="col-5 text-secondary">Email</dt>
+                        <dd class="col-7" id="profileEmail"></dd>
+
+                        <dt class="col-5 text-secondary">Alternative Email</dt>
+                        <dd class="col-7" id="profileAltEmail"></dd>
+
+                        <dt class="col-5 text-secondary">Role</dt>
+                        <dd class="col-7"><span class="badge border" id="profileRole"></span></dd>
+
+                        <dt class="col-5 text-secondary">Status</dt>
+                        <dd class="col-7" id="profileStatus"></dd>
+
+                        <dt class="col-5 text-secondary">Companies</dt>
+                        <dd class="col-7" id="profileCompanies"></dd>
+
+                        <dt class="col-5 text-secondary">Active Company</dt>
+                        <dd class="col-7" id="profileActiveCompany"></dd>
+
+                        <dt class="col-5 text-secondary">POS Location</dt>
+                        <dd class="col-7" id="profileLocation"></dd>
+
+                        <dt class="col-5 text-secondary">Joined</dt>
+                        <dd class="col-7" id="profileCreated"></dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+    </div>
 @endsection
+
+@push('scripts')
+    <script>
+        const userProfileModal = document.getElementById('userProfileModal');
+        userProfileModal.addEventListener('show.bs.modal', function (event) {
+            const btn = event.relatedTarget;
+            if (!btn) return;
+
+            const avatarUrl = btn.dataset.userAvatar;
+            const avatarImg = document.getElementById('profileAvatarImg');
+            const avatarPlaceholder = document.getElementById('profileAvatarPlaceholder');
+            if (avatarUrl) {
+                avatarImg.src = avatarUrl;
+                avatarImg.classList.remove('d-none');
+                avatarPlaceholder.classList.add('d-none');
+            } else {
+                avatarImg.classList.add('d-none');
+                avatarPlaceholder.classList.remove('d-none');
+            }
+
+            document.getElementById('profileName').textContent = btn.dataset.userName;
+            document.getElementById('profileId').textContent = '#' + btn.dataset.userId;
+            document.getElementById('profileEmail').textContent = btn.dataset.userEmail;
+            document.getElementById('profileAltEmail').textContent = btn.dataset.userAltEmail || '—';
+            document.getElementById('profileCompanies').textContent = btn.dataset.userCompanies;
+            document.getElementById('profileActiveCompany').textContent = btn.dataset.userActiveCompany || '—';
+            document.getElementById('profileLocation').textContent = btn.dataset.userLocation;
+            document.getElementById('profileCreated').textContent = btn.dataset.userCreated;
+
+            const roleBadge = document.getElementById('profileRole');
+            roleBadge.textContent = btn.dataset.userRole;
+            roleBadge.className = 'badge border ' + btn.dataset.userRoleBadge;
+
+            const statusEl = document.getElementById('profileStatus');
+            if (btn.dataset.userActive === '1') {
+                statusEl.innerHTML = '<span class="badge bg-success-subtle text-success border">Active</span>';
+            } else {
+                statusEl.innerHTML = '<span class="badge bg-danger-subtle text-danger border">Inactive</span>';
+            }
+        });
+    </script>
+@endpush

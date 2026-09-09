@@ -50,7 +50,17 @@
                                 <span class="badge bg-light text-secondary border font-monospace">#{{ $category->id }}</span>
                             </td>
                             <td>
-                                <div class="fw-semibold text-dark">{{ $category->name }}</div>
+                                @if($category->isSubcategory())
+                                    <div class="text-muted small">{{ $category->parent->name }}</div>
+                                    <div class="fw-semibold text-dark ps-3">
+                                        <i class="bi bi-arrow-return-right text-muted me-1"></i>{{ $category->name }}
+                                    </div>
+                                @else
+                                    <div class="fw-semibold text-dark">{{ $category->name }}</div>
+                                    @if($category->children->isNotEmpty())
+                                        <span class="badge bg-light text-secondary border mt-1">{{ $category->children->count() }} subcategor{{ $category->children->count() === 1 ? 'y' : 'ies' }}</span>
+                                    @endif
+                                @endif
                             </td>
                             <td class="text-end">
                                 <div class="btn-group btn-group-sm" role="group">

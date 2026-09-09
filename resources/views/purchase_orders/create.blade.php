@@ -170,13 +170,26 @@
             }
         }
 
+        // When a supplier is selected but has no linked products at all
+        // (either globally, or none for the chosen company), say so
+        // explicitly instead of leaving the dropdown looking broken with
+        // just the placeholder — this is the most common cause of an
+        // "empty" product list, since supplier links are opt-in per
+        // product (see the Suppliers picker on the product edit form).
+        function emptyOptionLabel(companyId) {
+            if (!companyId) return 'Select a company first...';
+            if (supplierSelect.value) return 'No products linked to this supplier for this company';
+            return 'No products for this company';
+        }
+
         function syncRowProductOptions() {
             const companyId = companySelect.value;
             const products = productsForCompany(companyId);
+            const placeholder = products.length ? 'Select a product...' : emptyOptionLabel(companyId);
 
             document.querySelectorAll('.product-select').forEach(sel => {
                 const current = sel.value;
-                sel.innerHTML = '<option value="">Select a product...</option>' +
+                sel.innerHTML = `<option value="">${placeholder}</option>` +
                     products.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
                 if (products.some(p => String(p.id) === current)) {
                     sel.value = current;
@@ -187,13 +200,14 @@
         function addProductRow() {
             const companyId = companySelect.value;
             const products = productsForCompany(companyId);
+            const placeholder = products.length ? 'Select a product...' : emptyOptionLabel(companyId);
 
             const row = document.createElement('tr');
             row.className = 'po-row';
             row.innerHTML = `
                 <td>
-                    <select name="product_id[]" class="form-select form-select-sm product-select" required>
-                        <option value="">Select a product...</option>
+                    <select name="product_id[]" class="form-select form-select-sm product-select" style="max-width: 320px;" required>
+                        <option value="">${placeholder}</option>
                         ${products.map(p => `<option value="${p.id}">${p.name}</option>`).join('')}
                     </select>
                 </td>

@@ -41,7 +41,7 @@ class AuthController extends Controller
             }
 
             $request->session()->regenerate();
-            return redirect()->intended(route('companies.index'))
+            return redirect()->intended(route('dashboard.index'))
                 ->with('success', 'Welcome back!');
         }
 

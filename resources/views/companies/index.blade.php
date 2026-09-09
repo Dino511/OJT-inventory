@@ -50,20 +50,24 @@
                                 @endif
                             </td>
                             <td class="text-end">
-                                <div class="d-inline-flex gap-1">
-                                    <form action="{{ route('companies.toggle-status', $company) }}" method="POST" class="d-inline-block" onsubmit="return confirm('{{ $company->is_active ? 'Deactivate' : 'Activate' }} this company?');">
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <form action="{{ route('companies.toggle-status', $company) }}" method="POST" class="d-inline" onsubmit="return confirm('{{ $company->is_active ? 'Deactivate' : 'Activate' }} this company?');">
                                         @csrf
                                         @method('PATCH')
-                                        <button type="submit" class="btn btn-sm {{ $company->is_active ? 'btn-outline-warning' : 'btn-outline-success' }}" title="{{ $company->is_active ? 'Deactivate' : 'Activate' }}">
+                                        <button type="submit" class="btn {{ $company->is_active ? 'btn-outline-warning' : 'btn-outline-success' }}" title="{{ $company->is_active ? 'Deactivate' : 'Activate' }}">
                                             <i class="bi {{ $company->is_active ? 'bi-toggle-on' : 'bi-toggle-off' }}"></i>
                                         </button>
                                     </form>
-                                    <a href="{{ route('companies.edit', $company) }}" class="btn btn-sm btn-outline-github">Edit</a>
+                                    <a href="{{ route('companies.edit', $company) }}" class="btn btn-outline-github" title="Edit">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
                                     @if(auth()->user()->isSuperAdmin())
-                                        <form action="{{ route('companies.destroy', $company) }}" method="POST" class="d-inline-block">
+                                        <form action="{{ route('companies.destroy', $company) }}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure?');">
                                             @csrf
                                             @method('DELETE')
-                                            <button type="submit" class="btn btn-sm btn-outline-github text-danger" onclick="return confirm('Are you sure?')">Delete</button>
+                                            <button type="submit" class="btn btn-outline-danger" title="Delete">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
                                         </form>
                                     @endif
                                 </div>

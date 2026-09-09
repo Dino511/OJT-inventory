@@ -59,6 +59,23 @@
                             @enderror
                         </div>
 
+                        <!-- Subcategory Name (optional) -->
+                        <div class="mb-3">
+                            <label for="subcategory_name" class="form-label small fw-semibold">
+                                Subcategory Name <span class="text-muted fw-normal">(optional)</span>
+                            </label>
+                            <input type="text"
+                                   id="subcategory_name"
+                                   name="subcategory_name"
+                                   class="form-control form-control-sm @error('subcategory_name') is-invalid @enderror"
+                                   value="{{ old('subcategory_name') }}"
+                                   placeholder="e.g. Soda, Juice">
+                            <div class="form-text small">If filled, this creates a subcategory nested under the category above. You can add more subcategories later from the Edit page.</div>
+                            @error('subcategory_name')
+                                <div class="invalid-feedback d-block small">{{ $message }}</div>
+                            @enderror
+                        </div>
+
                         <!-- Form Action Buttons -->
                         <div class="d-flex align-items-center gap-2 mt-4 pt-2 border-top">
                             <button type="submit" class="btn btn-github btn-sm px-3">

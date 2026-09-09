@@ -24,7 +24,7 @@ class ProductController extends Controller
         $sort = in_array($request->query('sort'), ['name', 'company', 'category']) ? $request->query('sort') : 'created_at';
         $direction = $request->query('direction') === 'asc' ? 'asc' : 'desc';
 
-        $query = Product::with(['company', 'category', 'baseUnit']);
+        $query = Product::with(['company', 'category.parent', 'baseUnit', 'suppliers']);
 
         switch ($sort) {
             case 'name':
@@ -47,9 +47,37 @@ class ProductController extends Controller
                 break;
         }
 
-        $products = $query->with('unitConversions.toUnit')->get();
+        $products = $query->with('unitConversion.toUnit')
+            ->withCount([
+                'purchaseOrderItems as pending_purchase_order_items_count' => fn ($q) => $q->whereHas(
+                    'purchaseOrder', fn ($po) => $po->where('status', \App\Models\PurchaseOrder::STATUS_PENDING)
+                ),
+                'stockTransferItems as pending_stock_transfer_items_count' => fn ($q) => $q->whereHas(
+                    'stockTransfer', fn ($st) => $st->where('status', \App\Models\StockTransfer::STATUS_PENDING)
+                ),
+                'inventories as stocked_inventory_count' => fn ($q) => $q->where('quantity', '>', 0),
+            ])
+            ->get();
 
         return view('products.index', compact('products', 'sort', 'direction'));
+    }
+
+    /**
+     * Whether a product has "active" dependencies elsewhere in the system —
+     * pending purchase orders or stock transfers that reference it, or
+     * on-hand inventory — used to strengthen the delete confirmation shown
+     * on the Products list rather than letting the user find out only after
+     * a DB foreign-key error.
+     */
+    private function hasActiveDependencies(Product $product): bool
+    {
+        return $product->purchaseOrderItems()
+                ->whereHas('purchaseOrder', fn ($q) => $q->where('status', \App\Models\PurchaseOrder::STATUS_PENDING))
+                ->exists()
+            || $product->stockTransferItems()
+                ->whereHas('stockTransfer', fn ($q) => $q->where('status', \App\Models\StockTransfer::STATUS_PENDING))
+                ->exists()
+            || $product->inventories()->where('quantity', '>', 0)->exists();
     }
 
     /**
@@ -58,7 +86,7 @@ class ProductController extends Controller
     public function create()
     {
         $companies = Company::all();
-        $categories = ProductCategory::all();
+        $categories = ProductCategory::with('children')->topLevel()->orderBy('name')->get();
         $baseUnits = BaseUnit::all();
         $conversionOptions = $this->conversionOptions();
         $suppliers = Supplier::orderBy('name')->get();
@@ -101,27 +129,27 @@ class ProductController extends Controller
             'selling_price' => 'required|numeric|min:0',
             'cost' => 'nullable|numeric|min:0',
             'photo' => 'nullable|image|max:4096',
-            'unit_conversion_ids' => 'nullable|array',
-            'unit_conversion_ids.*' => [
-                'integer',
+            'unit_conversion_id' => [
+                'nullable',
                 Rule::exists('unit_conversions', 'id')->where('from_unit_id', $request->input('base_unit_id')),
             ],
             'supplier_ids' => 'nullable|array',
             'supplier_ids.*' => 'integer|exists:suppliers,id',
         ]);
 
-        $conversionIds = $validated['unit_conversion_ids'] ?? [];
-        unset($validated['unit_conversion_ids']);
-
         $supplierIds = $validated['supplier_ids'] ?? [];
         unset($validated['supplier_ids']);
+
+        // The "None" radio submits an empty string, not an absent field —
+        // coerce explicitly rather than relying on middleware to have
+        // already converted it, since this FK column rejects ''.
+        $validated['unit_conversion_id'] = $validated['unit_conversion_id'] ?: null;
 
         if ($request->hasFile('photo')) {
             $validated['photo'] = $request->file('photo')->store('products', 'public');
         }
 
         $product = Product::create($validated);
-        $product->unitConversions()->sync($conversionIds);
         $product->suppliers()->sync($supplierIds);
 
         return redirect()->route('products.index')->with('success', 'Product created successfully.');
@@ -132,7 +160,7 @@ class ProductController extends Controller
      */
     public function show(Product $product)
     {
-        $product->load(['company', 'category', 'baseUnit', 'inventories.location', 'unitConversions.toUnit']);
+        $product->load(['company', 'category.parent', 'baseUnit', 'inventories.location', 'unitConversion.toUnit']);
 
         return view('products.show', compact('product'));
     }
@@ -143,16 +171,15 @@ class ProductController extends Controller
     public function edit(Product $product)
     {
         $companies = Company::all();
-        $categories = ProductCategory::all();
+        $categories = ProductCategory::with('children')->topLevel()->orderBy('name')->get();
         $baseUnits = BaseUnit::all();
         $conversionOptions = $this->conversionOptions();
-        $selectedConversionIds = $product->unitConversions->pluck('id')->all();
         $suppliers = Supplier::orderBy('name')->get();
         $selectedSupplierIds = $product->suppliers->pluck('id')->all();
 
         return view('products.edit', compact(
             'product', 'companies', 'categories', 'baseUnits',
-            'conversionOptions', 'selectedConversionIds', 'suppliers', 'selectedSupplierIds'
+            'conversionOptions', 'suppliers', 'selectedSupplierIds'
         ));
     }
 
@@ -174,20 +201,21 @@ class ProductController extends Controller
             'cost' => 'nullable|numeric|min:0',
             'photo' => 'nullable|image|max:4096',
             'remove_photo' => 'nullable|boolean',
-            'unit_conversion_ids' => 'nullable|array',
-            'unit_conversion_ids.*' => [
-                'integer',
+            'unit_conversion_id' => [
+                'nullable',
                 Rule::exists('unit_conversions', 'id')->where('from_unit_id', $request->input('base_unit_id')),
             ],
             'supplier_ids' => 'nullable|array',
             'supplier_ids.*' => 'integer|exists:suppliers,id',
         ]);
 
-        $conversionIds = $validated['unit_conversion_ids'] ?? [];
-        unset($validated['unit_conversion_ids']);
-
         $supplierIds = $validated['supplier_ids'] ?? [];
         unset($validated['supplier_ids']);
+
+        // The "None" radio submits an empty string, not an absent field —
+        // coerce explicitly rather than relying on middleware to have
+        // already converted it, since this FK column rejects ''.
+        $validated['unit_conversion_id'] = $validated['unit_conversion_id'] ?: null;
 
         $removePhoto = ! empty($validated['remove_photo']);
         unset($validated['remove_photo']);
@@ -205,7 +233,6 @@ class ProductController extends Controller
         }
 
         $product->update($validated);
-        $product->unitConversions()->sync($conversionIds);
         $product->suppliers()->sync($supplierIds);
 
         return redirect()->route('products.index')->with('success', 'Product updated successfully.');
@@ -230,6 +257,11 @@ class ProductController extends Controller
      */
     public function destroy(Product $product)
     {
+        if ($product->inventories()->where('quantity', '>', 0)->exists()) {
+            return redirect()->route('products.index')
+                ->with('error', 'Cannot delete this product because it still has stock on hand. Adjust or transfer out its remaining stock first.');
+        }
+
         try {
             $photo = $product->photo;
 

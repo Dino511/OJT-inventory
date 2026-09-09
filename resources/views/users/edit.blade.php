@@ -14,46 +14,48 @@
         <h3 class="fw-bold mb-0">Edit User</h3>
     </div>
 
-    <div class="row">
-        <div class="col-md-8 col-lg-6">
-            <div class="card shadow-sm">
-                <div class="card-header p-3">
-                    <span class="fw-semibold text-secondary small">USER DETAILS</span>
-                </div>
-                <div class="card-body p-4">
-                    <form action="{{ route('users.update', $user->id) }}" method="POST" enctype="multipart/form-data">
-                        @csrf
-                        @method('PUT')
+    <div class="card shadow-sm">
+        <div class="card-header p-3">
+            <span class="fw-semibold text-secondary small">USER DETAILS</span>
+        </div>
+        <div class="card-body p-4">
+            <form action="{{ route('users.update', $user->id) }}" method="POST" enctype="multipart/form-data">
+                @csrf
+                @method('PUT')
 
-                        <div class="mb-4 text-center">
-                            @if($user->avatar)
-                                <img id="currentAvatar" src="{{ $user->avatar_url }}" alt="{{ $user->name }}" class="rounded-circle border" style="width: 88px; height: 88px; object-fit: cover;">
-                            @else
-                                <div id="currentAvatar" class="rounded-circle bg-secondary-subtle border d-flex align-items-center justify-content-center mx-auto" style="width: 88px; height: 88px;">
-                                    <i class="bi bi-person-fill text-secondary" style="font-size: 2.2rem;"></i>
-                                </div>
-                            @endif
-                            <img id="avatarPreview" src="" alt="Preview" class="rounded-circle border d-none mx-auto mt-2" style="width: 88px; height: 88px; object-fit: cover;">
-
-                            <div class="mt-2">
-                                <label for="avatar" class="btn btn-outline-github btn-sm">
-                                    <i class="bi bi-camera me-1"></i> Change Photo
-                                </label>
-                                <input type="file" id="avatar" name="avatar" accept="image/*" class="d-none @error('avatar') is-invalid @enderror">
-
-                                @if($user->avatar)
-                                    <div class="form-check d-inline-block ms-2">
-                                        <input type="checkbox" class="form-check-input" id="remove_avatar" name="remove_avatar" value="1">
-                                        <label class="form-check-label small text-danger" for="remove_avatar">Remove photo</label>
-                                    </div>
-                                @endif
-                            </div>
-                            <div class="form-text small">JPG, PNG, or WebP, up to 4MB.</div>
-                            @error('avatar')
-                                <div class="invalid-feedback d-block small">{{ $message }}</div>
-                            @enderror
+                <!-- Photo, centered across the full width of the form -->
+                <div class="mb-4 text-center">
+                    @if($user->avatar)
+                        <img id="currentAvatar" src="{{ $user->avatar_url }}" alt="{{ $user->name }}" class="rounded-circle border" style="width: 88px; height: 88px; object-fit: cover;">
+                    @else
+                        <div id="currentAvatar" class="rounded-circle bg-secondary-subtle border d-flex align-items-center justify-content-center mx-auto" style="width: 88px; height: 88px;">
+                            <i class="bi bi-person-fill text-secondary" style="font-size: 2.2rem;"></i>
                         </div>
+                    @endif
+                    <img id="avatarPreview" src="" alt="Preview" class="rounded-circle border d-none mx-auto mt-2" style="width: 88px; height: 88px; object-fit: cover;">
 
+                    <div class="mt-2">
+                        <label for="avatar" class="btn btn-outline-github btn-sm">
+                            <i class="bi bi-camera me-1"></i> Change Photo
+                        </label>
+                        <input type="file" id="avatar" name="avatar" accept="image/*" class="d-none @error('avatar') is-invalid @enderror">
+
+                        @if($user->avatar)
+                            <div class="form-check d-inline-block ms-2">
+                                <input type="checkbox" class="form-check-input" id="remove_avatar" name="remove_avatar" value="1">
+                                <label class="form-check-label small text-danger" for="remove_avatar">Remove photo</label>
+                            </div>
+                        @endif
+                    </div>
+                    <div class="form-text small">JPG, PNG, or WebP, up to 4MB.</div>
+                    @error('avatar')
+                        <div class="invalid-feedback d-block small">{{ $message }}</div>
+                    @enderror
+                </div>
+
+                <div class="row">
+                    <!-- Left column: identity -->
+                    <div class="col-lg-6">
                         <div class="mb-3">
                             <label for="name" class="form-label small fw-semibold">Full Name</label>
                             <input type="text" id="name" name="name"
@@ -75,7 +77,7 @@
                         </div>
 
                         <div class="mb-3">
-                            <label for="alternative_email" class="form-label small fw-semibold">Alternative Email <span class="text-muted fw-normal">(optional)</span></label>
+                            <label for="alternative_email" class="form-label small fw-semibold">Alternative Email <span class="text-muted fw-normal">(required if setting a new password)</span></label>
                             <input type="email" id="alternative_email" name="alternative_email"
                                    class="form-control form-control-sm @error('alternative_email') is-invalid @enderror"
                                    value="{{ old('alternative_email', $user->alternative_email) }}">
@@ -84,7 +86,10 @@
                                 <div class="invalid-feedback d-block small">{{ $message }}</div>
                             @enderror
                         </div>
+                    </div>
 
+                    <!-- Right column: role & access -->
+                    <div class="col-lg-6 mt-4 mt-lg-0">
                         <div class="mb-3">
                             <label for="role" class="form-label small fw-semibold">Role</label>
                             <select id="role" name="role" class="form-select form-select-sm @error('role') is-invalid @enderror" required {{ $user->id === auth()->id() ? 'disabled' : '' }}>
@@ -150,10 +155,14 @@
                                 <div class="invalid-feedback d-block small">{{ $message }}</div>
                             @enderror
                         </div>
+                    </div>
+                </div>
 
-                        <hr class="my-3">
-                        <p class="text-muted small mb-2">Leave the password fields blank to keep the current password.</p>
+                <hr class="my-3">
+                <p class="text-muted small mb-2">Leave the password fields blank to keep the current password.</p>
 
+                <div class="row">
+                    <div class="col-lg-3 col-md-6">
                         <div class="mb-3">
                             <label for="password" class="form-label small fw-semibold">New Password</label>
                             <input type="password" id="password" name="password"
@@ -162,25 +171,26 @@
                                 <div class="invalid-feedback d-block small">{{ $message }}</div>
                             @enderror
                         </div>
-
+                    </div>
+                    <div class="col-lg-3 col-md-6">
                         <div class="mb-3">
                             <label for="password_confirmation" class="form-label small fw-semibold">Confirm New Password</label>
                             <input type="password" id="password_confirmation" name="password_confirmation"
                                    class="form-control form-control-sm">
                         </div>
-
-                        <!-- Form Action Buttons -->
-                        <div class="d-flex align-items-center gap-2 mt-4 pt-2 border-top">
-                            <button type="submit" class="btn btn-github btn-sm px-3">
-                                <i class="bi bi-check-lg me-1"></i> Update User
-                            </button>
-                            <a href="{{ route('users.index') }}" class="btn btn-outline-github btn-sm">
-                                Cancel
-                            </a>
-                        </div>
-                    </form>
+                    </div>
                 </div>
-            </div>
+
+                <!-- Form Action Buttons -->
+                <div class="d-flex align-items-center gap-2 mt-2 pt-3 border-top">
+                    <button type="submit" class="btn btn-github btn-sm px-3">
+                        <i class="bi bi-check-lg me-1"></i> Update User
+                    </button>
+                    <a href="{{ route('users.index') }}" class="btn btn-outline-github btn-sm">
+                        Cancel
+                    </a>
+                </div>
+            </form>
         </div>
     </div>
 @endsection

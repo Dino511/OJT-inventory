@@ -20,6 +20,7 @@ class Product extends Model
         'code',
         'unit_value',
         'base_unit_id',
+        'unit_conversion_id',
         'reorder_point',
         'selling_price',
         'cost',
@@ -71,15 +72,31 @@ class Product extends Model
     }
 
     /**
-     * Which of the global unit conversions (from this product's base unit)
-     * actually apply to this specific product — since the same base unit
-     * can now have more than one conversion defined (e.g. two different
-     * Box -> Piece factors for different products), each product picks
-     * which one(s) are meaningful for it.
+     * Every purchase-order line item that has ever ordered this product.
      */
-    public function unitConversions(): BelongsToMany
+    public function purchaseOrderItems(): HasMany
     {
-        return $this->belongsToMany(UnitConversion::class, 'product_unit_conversions');
+        return $this->hasMany(PurchaseOrderItem::class, 'product_id');
+    }
+
+    /**
+     * Every stock-transfer line item that has ever moved this product.
+     */
+    public function stockTransferItems(): HasMany
+    {
+        return $this->hasMany(StockTransferItem::class, 'product_id');
+    }
+
+    /**
+     * The single global unit conversion (from this product's base unit)
+     * that applies to this specific product — since the same base unit can
+     * have more than one conversion defined (e.g. two different
+     * Box -> Piece factors for different products), each product picks
+     * exactly one that's meaningful for it.
+     */
+    public function unitConversion(): BelongsTo
+    {
+        return $this->belongsTo(UnitConversion::class, 'unit_conversion_id');
     }
 
     /**

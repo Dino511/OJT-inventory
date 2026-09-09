@@ -52,6 +52,11 @@
                                         <option value="{{ $category->id }}" {{ old('category_id') == $category->id ? 'selected' : '' }}>
                                             {{ $category->name }}
                                         </option>
+                                        @foreach($category->children as $child)
+                                            <option value="{{ $child->id }}" {{ old('category_id') == $child->id ? 'selected' : '' }}>
+                                                — {{ $child->name }}
+                                            </option>
+                                        @endforeach
                                     @endforeach
                                 </select>
                                 @error('category_id')
@@ -169,13 +174,13 @@
                             </div>
                         </div>
 
-                        <!-- Applicable Unit Conversions -->
+                        <!-- Applicable Unit Conversion -->
                         <div class="mb-3">
-                            <label class="form-label small fw-semibold">Applicable Unit Conversions <span class="text-muted fw-normal">(optional)</span></label>
+                            <label class="form-label small fw-semibold">Applicable Unit Conversion <span class="text-muted fw-normal">(optional)</span></label>
                             <div id="conversionsList" class="border rounded p-2 d-flex flex-wrap column-gap-4 row-gap-1" style="max-height: 110px; overflow-y: auto;">
                                 <span class="text-muted small">Select a base unit first.</span>
                             </div>
-                            <div class="form-text small">Check which of this base unit's conversions apply to this product.</div>
+                            <div class="form-text small">Pick the one conversion (if any) that applies to this product.</div>
                         </div>
 
                         <!-- Pricing Row -->
@@ -293,7 +298,7 @@
     // Every registered unit conversion — filtered client-side to whichever
     // ones start from the currently selected base unit.
     const allConversions = @json($conversionOptions);
-    const selectedConversionIds = @json(old('unit_conversion_ids', []));
+    const selectedConversionId = @json(old('unit_conversion_id', ''));
 
     function syncConversionOptions() {
         const baseUnitId = document.getElementById('base_unit_id').value;
@@ -305,10 +310,17 @@
         } else if (matches.length === 0) {
             list.innerHTML = '<span class="text-muted small">No conversions defined yet for this base unit.</span>';
         } else {
-            list.innerHTML = matches.map(c => `
+            const noneChecked = !selectedConversionId ? 'checked' : '';
+            list.innerHTML = `
                 <div class="form-check" style="min-width: 170px;">
-                    <input type="checkbox" name="unit_conversion_ids[]" value="${c.id}" id="conversion_${c.id}"
-                           class="form-check-input" ${selectedConversionIds.includes(c.id) || selectedConversionIds.includes(String(c.id)) ? 'checked' : ''}>
+                    <input type="radio" name="unit_conversion_id" value="" id="conversion_none"
+                           class="form-check-input" ${noneChecked}>
+                    <label for="conversion_none" class="form-check-label small text-muted">None</label>
+                </div>
+            ` + matches.map(c => `
+                <div class="form-check" style="min-width: 170px;">
+                    <input type="radio" name="unit_conversion_id" value="${c.id}" id="conversion_${c.id}"
+                           class="form-check-input" ${String(selectedConversionId) === String(c.id) ? 'checked' : ''}>
                     <label for="conversion_${c.id}" class="form-check-label small">${c.label}</label>
                 </div>
             `).join('');
