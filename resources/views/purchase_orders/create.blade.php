@@ -2,6 +2,22 @@
 
 @section('title', 'New Purchase Order')
 
+@push('styles')
+    <style>
+        .po-items-table th,
+        .po-items-table td {
+            padding-top: 0.65rem;
+            padding-bottom: 0.65rem;
+        }
+
+        .po-items-table .remove-row {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+    </style>
+@endpush
+
 @section('content')
     <!-- Breadcrumb & Page Header -->
     <div class="mb-4">
@@ -97,21 +113,27 @@
                 </div>
 
                 <label class="form-label small fw-semibold">Products</label>
-                <div class="table-responsive border rounded mb-3">
-                    <table class="table table-sm align-middle mb-0">
+                <div class="table-responsive border rounded mb-2">
+                    <table class="table table-sm align-middle mb-0 po-items-table">
+                        <colgroup>
+                            <col style="width: 56%;">
+                            <col style="width: 18%;">
+                            <col style="width: 22%;">
+                            <col style="width: 48px;">
+                        </colgroup>
                         <thead>
                             <tr>
-                                <th class="small text-secondary text-uppercase">Product</th>
-                                <th class="small text-secondary text-uppercase" style="width: 160px;">Quantity</th>
-                                <th class="small text-secondary text-uppercase" style="width: 200px;">Unit Cost</th>
-                                <th style="width: 44px;"></th>
+                                <th class="small text-secondary text-uppercase ps-3">Product</th>
+                                <th class="small text-secondary text-uppercase">Quantity</th>
+                                <th class="small text-secondary text-uppercase">Unit Cost</th>
+                                <th class="pe-3"></th>
                             </tr>
                         </thead>
                         <tbody id="poRows"></tbody>
                     </table>
                 </div>
 
-                <button type="button" id="addProductRow" class="btn btn-outline-github btn-sm mb-4" disabled>
+                <button type="button" id="addProductRow" class="btn btn-outline-github btn-sm mt-2 mb-4" disabled>
                     <i class="bi bi-plus-lg me-1"></i> Add Product
                 </button>
 
@@ -136,6 +158,15 @@
         // and every product row's choices without a round-trip.
         const allLocations = @json($locationOptions);
         const allProducts = @json($productOptions);
+
+        // Product/location names come straight from user-entered data and
+        // are inserted via innerHTML below — escape them so a name like
+        // "<img src=x onerror=...>" renders as text instead of executing.
+        function escapeHtml(value) {
+            return String(value).replace(/[&<>"']/g, (char) => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+            }[char]));
+        }
 
         const companySelect = document.getElementById('company_id');
         const supplierSelect = document.getElementById('supplier_id');
@@ -166,18 +197,31 @@
             } else {
                 locationSelect.disabled = false;
                 locationSelect.innerHTML = '<option value="">Select a location...</option>' +
-                    locations.map(l => `<option value="${l.id}">${l.name}</option>`).join('');
+                    locations.map(l => `<option value="${l.id}">${escapeHtml(l.name)}</option>`).join('');
             }
+        }
+
+        // When a supplier is selected but has no linked products at all
+        // (either globally, or none for the chosen company), say so
+        // explicitly instead of leaving the dropdown looking broken with
+        // just the placeholder — this is the most common cause of an
+        // "empty" product list, since supplier links are opt-in per
+        // product (see the Suppliers picker on the product edit form).
+        function emptyOptionLabel(companyId) {
+            if (!companyId) return 'Select a company first...';
+            if (supplierSelect.value) return 'No products linked to this supplier for this company';
+            return 'No products for this company';
         }
 
         function syncRowProductOptions() {
             const companyId = companySelect.value;
             const products = productsForCompany(companyId);
+            const placeholder = products.length ? 'Select a product...' : emptyOptionLabel(companyId);
 
             document.querySelectorAll('.product-select').forEach(sel => {
                 const current = sel.value;
-                sel.innerHTML = '<option value="">Select a product...</option>' +
-                    products.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+                sel.innerHTML = `<option value="">${escapeHtml(placeholder)}</option>` +
+                    products.map(p => `<option value="${p.id}">${escapeHtml(p.name)}</option>`).join('');
                 if (products.some(p => String(p.id) === current)) {
                     sel.value = current;
                 }
@@ -187,14 +231,15 @@
         function addProductRow() {
             const companyId = companySelect.value;
             const products = productsForCompany(companyId);
+            const placeholder = products.length ? 'Select a product...' : emptyOptionLabel(companyId);
 
             const row = document.createElement('tr');
             row.className = 'po-row';
             row.innerHTML = `
-                <td>
-                    <select name="product_id[]" class="form-select form-select-sm product-select" required>
-                        <option value="">Select a product...</option>
-                        ${products.map(p => `<option value="${p.id}">${p.name}</option>`).join('')}
+                <td class="ps-3">
+                    <select name="product_id[]" class="form-select form-select-sm product-select" style="max-width: 420px;" required>
+                        <option value="">${escapeHtml(placeholder)}</option>
+                        ${products.map(p => `<option value="${p.id}">${escapeHtml(p.name)}</option>`).join('')}
                     </select>
                 </td>
                 <td>
@@ -203,7 +248,7 @@
                 <td>
                     <input type="number" name="unit_cost[]" min="0" step="0.01" class="form-control form-control-sm unit-cost-input" placeholder="e.g. 50.00">
                 </td>
-                <td class="text-end">
+                <td class="pe-3 text-center">
                     <button type="button" class="btn btn-sm btn-outline-danger remove-row" title="Remove this product">
                         <i class="bi bi-x-lg"></i>
                     </button>

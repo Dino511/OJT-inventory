@@ -56,7 +56,10 @@
                             </td>
                             <td class="fw-semibold text-dark">{{ $delivery['source_or_supplier'] }}</td>
                             <td class="text-secondary small">{{ $delivery['company'] }}</td>
-                            <td class="text-secondary small">{{ $delivery['destination'] }}</td>
+                            <td class="text-secondary small">
+                                {{ $delivery['destination'] }}
+                                <span class="badge bg-light text-secondary border ms-1">{{ $delivery['destination_is_warehouse'] ? 'Warehouse' : 'Store' }}</span>
+                            </td>
                             <td class="text-secondary small">{{ $delivery['date']?->format('M j, Y') ?? '—' }}</td>
                             <td class="text-secondary small">
                                 @if($delivery['expected_delivery_date'])
@@ -72,47 +75,49 @@
                                 @include('deliveries._status-badge', ['status' => $delivery['status']])
                             </td>
                             <td class="text-end">
-                                @if($delivery['type'] === 'purchase_order')
-                                    @if(auth()->user()->isSuperAdmin())
-                                        <a href="{{ $delivery['edit_route'] }}" class="btn btn-outline-github btn-sm" title="Edit dates">
-                                            <i class="bi bi-pencil"></i>
+                                <div class="btn-group btn-group-sm" role="group">
+                                    @if($delivery['type'] === 'purchase_order')
+                                        @if(auth()->user()->isSuperAdmin())
+                                            <a href="{{ $delivery['edit_route'] }}" class="btn btn-outline-github" title="Edit dates">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+                                            <form action="{{ route('purchase-orders.destroy', $delivery['id']) }}" method="POST" class="d-inline" onsubmit="return confirm('Delete this purchase order?');">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" class="btn btn-outline-danger" title="Delete">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </form>
+                                        @endif
+                                    @else
+                                        <a href="{{ $delivery['show_route'] }}" class="btn btn-outline-github" title="View">
+                                            <i class="bi bi-eye"></i>
                                         </a>
-                                        <form action="{{ route('purchase-orders.destroy', $delivery['id']) }}" method="POST" class="d-inline" onsubmit="return confirm('Delete this purchase order?');">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit" class="btn btn-outline-danger btn-sm" title="Delete">
-                                                <i class="bi bi-trash"></i>
-                                            </button>
-                                        </form>
+                                        @if($delivery['status'] === 'pending' && (auth()->user()->isSuperAdmin() || auth()->user()->isBusinessAdmin()))
+                                            <form action="{{ route('stock-transfers.receive', $delivery['id']) }}" method="POST" class="d-inline" onsubmit="return confirm('Mark this transfer as received? Store stock will be updated immediately.');">
+                                                @csrf
+                                                <button type="submit" class="btn btn-outline-success" title="Mark Received">
+                                                    <i class="bi bi-check-lg"></i>
+                                                </button>
+                                            </form>
+                                            <form action="{{ route('stock-transfers.cancel', $delivery['id']) }}" method="POST" class="d-inline" onsubmit="return confirm('Cancel this transfer? Stock will be returned to the warehouse.');">
+                                                @csrf
+                                                <button type="submit" class="btn btn-outline-danger" title="Cancel">
+                                                    <i class="bi bi-x-lg"></i>
+                                                </button>
+                                            </form>
+                                        @endif
+                                        @if($delivery['status'] !== 'pending' && auth()->user()->isSuperAdmin())
+                                            <form action="{{ route('stock-transfers.destroy', $delivery['id']) }}" method="POST" class="d-inline" onsubmit="return confirm('Delete this transfer?');">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" class="btn btn-outline-danger" title="Delete">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </form>
+                                        @endif
                                     @endif
-                                @else
-                                    <a href="{{ $delivery['show_route'] }}" class="btn btn-outline-github btn-sm" title="View">
-                                        <i class="bi bi-eye"></i>
-                                    </a>
-                                    @if($delivery['status'] === 'pending' && (auth()->user()->isSuperAdmin() || auth()->user()->isBusinessAdmin()))
-                                        <form action="{{ route('stock-transfers.receive', $delivery['id']) }}" method="POST" class="d-inline" onsubmit="return confirm('Mark this transfer as received? Store stock will be updated immediately.');">
-                                            @csrf
-                                            <button type="submit" class="btn btn-outline-success btn-sm" title="Mark Received">
-                                                <i class="bi bi-check-lg"></i>
-                                            </button>
-                                        </form>
-                                        <form action="{{ route('stock-transfers.cancel', $delivery['id']) }}" method="POST" class="d-inline" onsubmit="return confirm('Cancel this transfer? Stock will be returned to the warehouse.');">
-                                            @csrf
-                                            <button type="submit" class="btn btn-outline-danger btn-sm" title="Cancel">
-                                                <i class="bi bi-x-lg"></i>
-                                            </button>
-                                        </form>
-                                    @endif
-                                    @if($delivery['status'] !== 'pending' && auth()->user()->isSuperAdmin())
-                                        <form action="{{ route('stock-transfers.destroy', $delivery['id']) }}" method="POST" class="d-inline" onsubmit="return confirm('Delete this transfer?');">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit" class="btn btn-outline-danger btn-sm" title="Delete">
-                                                <i class="bi bi-trash"></i>
-                                            </button>
-                                        </form>
-                                    @endif
-                                @endif
+                                </div>
                             </td>
                         </tr>
                     @empty

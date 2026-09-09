@@ -61,6 +61,9 @@
                                 <dd class="col-sm-8">
                                     @if($product->category)
                                         <span class="badge bg-secondary-subtle text-secondary border px-2">{{ $product->category->name }}</span>
+                                        @if($product->category->parent)
+                                            <div class="text-muted small mt-1">in {{ $product->category->parent->name }}</div>
+                                        @endif
                                     @else
                                         <span class="text-muted">N/A</span>
                                     @endif
@@ -69,11 +72,11 @@
                                 <dt class="col-sm-4 text-secondary">Base Unit</dt>
                                 <dd class="col-sm-8">
                                     <span class="fw-semibold">{{ $product->unit_value ?? 1 }}</span> {{ $product->baseUnit->name ?? 'Piece' }}
-                                    @foreach($product->unitConversions as $conversion)
+                                    @if($conversion = $product->unitConversion)
                                         <div class="text-muted" style="font-size: 0.8rem;">
                                             = {{ (float) $conversion->factor * ($product->unit_value ?? 1) }} {{ $conversion->toUnit->name ?? '' }}
                                         </div>
-                                    @endforeach
+                                    @endif
                                 </dd>
 
                                 <dt class="col-sm-4 text-secondary">Reorder Point</dt>
@@ -105,9 +108,10 @@
                 </div>
                 <div class="list-group list-group-flush">
                     @forelse($product->inventories as $item)
+                        @php [$statusClass, $statusLabel] = $item->stock_status_badge; @endphp
                         <div class="list-group-item d-flex justify-content-between align-items-center px-3 py-2">
                             <span class="small">{{ $item->location->name ?? 'N/A' }}</span>
-                            <span class="badge {{ $item->quantity > 0 ? 'bg-success-subtle text-success border-success-subtle' : 'bg-danger-subtle text-danger border-danger-subtle' }} border">
+                            <span class="badge {{ $statusClass }} border" title="{{ $statusLabel }}">
                                 {{ $item->quantity }} units
                             </span>
                         </div>

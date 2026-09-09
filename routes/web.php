@@ -58,6 +58,7 @@ Route::middleware('auth')->group(function () {
         Route::delete('/products/{product}', [ProductController::class, 'destroy'])->name('products.destroy');
     });
     Route::resource('categories', ProductCategoryController::class);
+    Route::post('/categories/{category}/subcategories', [ProductCategoryController::class, 'storeSubcategory'])->name('categories.subcategories.store');
     Route::resource('suppliers', SupplierController::class);
     Route::get('/inventory/history', [InventoryController::class, 'historyIndex'])->name('inventory.history.index');
     Route::get('/inventory/history/export', [InventoryController::class, 'exportHistoryCsv'])->name('inventory.history.export');

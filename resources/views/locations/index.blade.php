@@ -56,21 +56,27 @@
                                 @endif
                             </td>
                             <td class="text-end pe-4">
-                                <form action="{{ route('locations.toggle-status', $location) }}" method="POST" class="d-inline-block" onsubmit="return confirm('{{ $location->is_active ? 'Deactivate' : 'Activate' }} this location?');">
-                                    @csrf
-                                    @method('PATCH')
-                                    <button type="submit" class="btn btn-sm {{ $location->is_active ? 'btn-outline-warning' : 'btn-outline-success' }} me-1" title="{{ $location->is_active ? 'Deactivate' : 'Activate' }}">
-                                        <i class="bi {{ $location->is_active ? 'bi-toggle-on' : 'bi-toggle-off' }}"></i>
-                                    </button>
-                                </form>
-                                <a href="{{ route('locations.edit', $location) }}" class="btn btn-sm btn-outline-github me-1" title="Edit">✏️</a>
-                                @if(auth()->user()->isSuperAdmin())
-                                    <form action="{{ route('locations.destroy', $location) }}" method="POST" class="d-inline-block">
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <form action="{{ route('locations.toggle-status', $location) }}" method="POST" class="d-inline" onsubmit="return confirm('{{ $location->is_active ? 'Deactivate' : 'Activate' }} this location?');">
                                         @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="btn btn-sm btn-outline-github text-danger" title="Delete" onclick="return confirm('Are you sure?')">🗑️</button>
+                                        @method('PATCH')
+                                        <button type="submit" class="btn {{ $location->is_active ? 'btn-outline-warning' : 'btn-outline-success' }}" title="{{ $location->is_active ? 'Deactivate' : 'Activate' }}">
+                                            <i class="bi {{ $location->is_active ? 'bi-toggle-on' : 'bi-toggle-off' }}"></i>
+                                        </button>
                                     </form>
-                                @endif
+                                    <a href="{{ route('locations.edit', $location) }}" class="btn btn-outline-github" title="Edit">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    @if(auth()->user()->isSuperAdmin())
+                                        <form action="{{ route('locations.destroy', $location) }}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure?');">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="btn btn-outline-danger" title="Delete">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </form>
+                                    @endif
+                                </div>
                             </td>
                         </tr>
                     @empty

@@ -41,46 +41,51 @@
         </div>
 
         <!-- Data Table -->
-        <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0" id="productsTable">
+        <div class="table-responsive" x-data="productsSorter()">
+            <table class="table table-hover align-middle mb-0" id="productsTable" x-ref="table">
                 <thead>
                     <tr>
                         <th scope="col" style="width: 60px;"></th>
-                        <th scope="col" style="width: 120px;">SKU</th>
-                        @php
-                            $sortLink = fn (string $column) => route('products.index', [
-                                'sort' => $column,
-                                'direction' => ($sort === $column && $direction === 'asc') ? 'desc' : 'asc',
-                            ]);
-                            $sortIcon = fn (string $column) => $sort !== $column
-                                ? 'bi-arrow-down-up text-muted'
-                                : ($direction === 'asc' ? 'bi-sort-alpha-down' : 'bi-sort-alpha-up');
-                        @endphp
-                        <th scope="col">
-                            <a href="{{ $sortLink('name') }}" class="text-decoration-none text-dark d-inline-flex align-items-center gap-1">
-                                NAME <i class="bi {{ $sortIcon('name') }} small"></i>
-                            </a>
+                        <th scope="col" style="width: 120px;" class="sortable-th" @click="sort('sku', 'text')">
+                            SKU <i :class="icon('sku')"></i>
+                        </th>
+                        <th scope="col" class="sortable-th" @click="sort('name', 'text')">
+                            NAME <i :class="icon('name')"></i>
                         </th>
                         <th scope="col">DESCRIPTION</th>
-                        <th scope="col">
-                            <a href="{{ $sortLink('company') }}" class="text-decoration-none text-dark d-inline-flex align-items-center gap-1">
-                                COMPANY <i class="bi {{ $sortIcon('company') }} small"></i>
-                            </a>
+                        <th scope="col" class="sortable-th" @click="sort('company', 'text')">
+                            COMPANY <i :class="icon('company')"></i>
                         </th>
-                        <th scope="col">
-                            <a href="{{ $sortLink('category') }}" class="text-decoration-none text-dark d-inline-flex align-items-center gap-1">
-                                CATEGORY <i class="bi {{ $sortIcon('category') }} small"></i>
-                            </a>
+                        <th scope="col" class="sortable-th" @click="sort('supplier', 'text')">
+                            SUPPLIER <i :class="icon('supplier')"></i>
                         </th>
-                        <th scope="col">BASE UNIT</th>
-                        <th scope="col">REORDER POINT</th>
-                        <th scope="col">STATUS</th>
+                        <th scope="col" class="sortable-th" @click="sort('category', 'text')">
+                            CATEGORY <i :class="icon('category')"></i>
+                        </th>
+                        <th scope="col" class="sortable-th" @click="sort('baseUnit', 'text')">
+                            BASE UNIT <i :class="icon('baseUnit')"></i>
+                        </th>
+                        <th scope="col" class="sortable-th" @click="sort('reorder', 'number')">
+                            REORDER POINT <i :class="icon('reorder')"></i>
+                        </th>
+                        <th scope="col" class="sortable-th" @click="sort('status', 'text')">
+                            STATUS <i :class="icon('status')"></i>
+                        </th>
                         <th scope="col" class="text-end" style="width: 200px;">ACTIONS</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody x-ref="tbody">
                     @forelse($products as $product)
-                        <tr>
+                        <tr
+                            data-sku="{{ $product->code ?? '' }}"
+                            data-name="{{ $product->name }}"
+                            data-company="{{ $product->company->name ?? '' }}"
+                            data-supplier="{{ $product->suppliers->first()->name ?? '' }}"
+                            data-category="{{ $product->category->name ?? '' }}"
+                            data-base-unit="{{ $product->baseUnit->name ?? 'Piece' }}"
+                            data-reorder="{{ $product->reorder_point ?? 0 }}"
+                            data-status="{{ $product->is_active ? 'Active' : 'Inactive' }}"
+                        >
                             <td>
                                 <a href="{{ route('products.show', $product->id) }}">
                                     @if($product->photo)
@@ -116,11 +121,26 @@
                             <td class="text-secondary small">
                                 {{ $product->company->name ?? 'N/A' }}
                             </td>
+                            <td class="text-secondary small">
+                                @if($product->suppliers->isNotEmpty())
+                                    <span title="{{ $product->suppliers->pluck('name')->implode(', ') }}">
+                                        {{ $product->suppliers->first()->name }}
+                                        @if($product->suppliers->count() > 1)
+                                            <span class="badge bg-light text-secondary border ms-1">+{{ $product->suppliers->count() - 1 }}</span>
+                                        @endif
+                                    </span>
+                                @else
+                                    <span class="text-muted">N/A</span>
+                                @endif
+                            </td>
                             <td>
                                 @if($product->category)
                                     <span class="badge bg-secondary-subtle text-secondary border px-2">
                                         {{ $product->category->name }}
                                     </span>
+                                    @if($product->category->parent)
+                                        <div class="text-muted" style="font-size: 0.75rem;">in {{ $product->category->parent->name }}</div>
+                                    @endif
                                 @else
                                     <span class="text-muted small">N/A</span>
                                 @endif
@@ -128,11 +148,11 @@
                             <td class="text-secondary small">
                                 <span class="fw-semibold text-dark">{{ $product->unit_value ?? 1 }}</span>
                                 {{ $product->baseUnit->name ?? 'Piece' }}
-                                @foreach($product->unitConversions as $conversion)
+                                @if($conversion = $product->unitConversion)
                                     <div class="text-muted" style="font-size: 0.75rem;">
                                         = {{ (float) $conversion->factor * ($product->unit_value ?? 1) }} {{ $conversion->toUnit->name ?? '' }}
                                     </div>
-                                @endforeach
+                                @endif
                             </td>
                             <td class="text-secondary small">
                                 {{ number_format($product->reorder_point ?? 0, 2) }}
@@ -161,7 +181,12 @@
                                         <i class="bi bi-pencil"></i>
                                     </a>
                                     @if(auth()->user()->isSuperAdmin())
-                                        <form action="{{ route('products.destroy', $product->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this product?');">
+                                        @php
+                                            $hasDependencies = $product->pending_purchase_order_items_count > 0
+                                                || $product->pending_stock_transfer_items_count > 0
+                                                || $product->stocked_inventory_count > 0;
+                                        @endphp
+                                        <form action="{{ route('products.destroy', $product->id) }}" method="POST" class="d-inline product-delete-form" data-has-dependencies="{{ $hasDependencies ? '1' : '0' }}">
                                             @csrf
                                             @method('DELETE')
                                             <button type="submit" class="btn btn-outline-danger" title="Delete">
@@ -174,7 +199,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="10" class="text-center py-5 text-muted">
+                            <td colspan="11" class="text-center py-5 text-muted">
                                 <i class="bi bi-inbox fs-2 d-block mb-2 text-secondary"></i>
                                 No products found. Click <strong>New Product</strong> to get started.
                             </td>
@@ -194,11 +219,68 @@
             white-space: normal;
             word-wrap: break-word;
         }
+        .sortable-th {
+            cursor: pointer;
+            user-select: none;
+            white-space: nowrap;
+        }
+        .sortable-th:hover {
+            color: var(--bs-body-color);
+        }
+        .sortable-th .bi-sort-up,
+        .sortable-th .bi-sort-down {
+            color: var(--bs-primary, #1f883d);
+        }
     </style>
 @endpush
 
 @push('scripts')
     <script>
+        // Alpine.js component powering the Products table's click-to-sort
+        // headers. The table isn't paginated (every product is already in
+        // the DOM), so sorting is done client-side against each row's
+        // data-* attributes — no reload, no server round-trip. Row markup
+        // itself is untouched Blade output; this only reorders <tr> nodes.
+        function productsSorter() {
+            return {
+                sortKey: null,
+                sortDir: 'asc',
+
+                icon(key) {
+                    if (this.sortKey !== key) return 'bi bi-arrow-down-up text-muted small';
+                    return this.sortDir === 'asc' ? 'bi bi-sort-up small' : 'bi bi-sort-down small';
+                },
+
+                sort(key, type) {
+                    this.sortDir = (this.sortKey === key && this.sortDir === 'asc') ? 'desc' : 'asc';
+                    this.sortKey = key;
+
+                    const tbody = this.$refs.tbody;
+                    const totalColumns = this.$refs.table.querySelectorAll('thead th').length;
+                    const rows = Array.from(tbody.querySelectorAll('tr')).filter((row) => row.cells.length === totalColumns);
+
+                    rows.sort((rowA, rowB) => {
+                        let valueA = rowA.dataset[key] ?? '';
+                        let valueB = rowB.dataset[key] ?? '';
+
+                        if (type === 'number') {
+                            valueA = parseFloat(valueA) || 0;
+                            valueB = parseFloat(valueB) || 0;
+                            return this.sortDir === 'asc' ? valueA - valueB : valueB - valueA;
+                        }
+
+                        valueA = valueA.toLowerCase();
+                        valueB = valueB.toLowerCase();
+                        if (valueA < valueB) return this.sortDir === 'asc' ? -1 : 1;
+                        if (valueA > valueB) return this.sortDir === 'asc' ? 1 : -1;
+                        return 0;
+                    });
+
+                    rows.forEach((row) => tbody.appendChild(row));
+                },
+            };
+        }
+
         document.getElementById('tableSearch')?.addEventListener('keyup', function() {
             let filter = this.value.toLowerCase();
             let rows = document.querySelectorAll('#productsTable tbody tr');
@@ -210,6 +292,23 @@
 
         document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(function (el) {
             new bootstrap.Tooltip(el);
+        });
+
+        // Delete confirmation: warn more strongly when the product is tied
+        // to pending purchase orders/transfers or still has stock on hand.
+        document.querySelectorAll('.product-delete-form').forEach(function (form) {
+            form.addEventListener('submit', function (e) {
+                e.preventDefault();
+
+                const hasDependencies = form.dataset.hasDependencies === '1';
+                const message = hasDependencies
+                    ? 'Warning: This product is linked to active purchase orders or inventory records. Are you sure you want to delete this product?'
+                    : 'Are you sure you want to delete this product?';
+
+                if (confirm(message)) {
+                    form.submit();
+                }
+            });
         });
     </script>
 @endpush

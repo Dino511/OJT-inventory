@@ -23,8 +23,9 @@
         </div>
 
         @if(session('success'))
-            <div class="alert alert-success border-0 shadow-sm w-100 mb-3" style="max-width: 350px;" role="alert">
-                {{ session('success') }}
+            <div class="alert alert-success border-0 shadow-sm w-100 mb-3 d-flex align-items-center justify-content-between" style="max-width: 350px;" role="alert" data-auto-dismiss>
+                <span>{{ session('success') }}</span>
+                <button type="button" class="btn-close ms-2" aria-label="Close" data-dismiss-alert></button>
             </div>
         @endif
 
@@ -54,17 +55,27 @@
 
                 <div class="mb-3">
                     <label for="password" class="form-label small fw-semibold">New Password</label>
-                    <input type="password" id="password" name="password"
-                           class="form-control form-control-sm @error('password') is-invalid @enderror" required>
+                    <div class="input-group input-group-sm">
+                        <input type="password" id="password" name="password"
+                               class="form-control form-control-sm @error('password') is-invalid @enderror" required>
+                        <button type="button" class="btn btn-outline-secondary toggle-password" data-target="password" tabindex="-1" aria-label="Show password">
+                            <i class="bi bi-eye"></i>
+                        </button>
+                    </div>
                     @error('password')
-                        <div class="invalid-feedback small">{{ $message }}</div>
+                        <div class="invalid-feedback small d-block">{{ $message }}</div>
                     @enderror
                 </div>
 
                 <div class="mb-3">
                     <label for="password_confirmation" class="form-label small fw-semibold">Confirm New Password</label>
-                    <input type="password" id="password_confirmation" name="password_confirmation"
-                           class="form-control form-control-sm" required>
+                    <div class="input-group input-group-sm">
+                        <input type="password" id="password_confirmation" name="password_confirmation"
+                               class="form-control form-control-sm" required>
+                        <button type="button" class="btn btn-outline-secondary toggle-password" data-target="password_confirmation" tabindex="-1" aria-label="Show password">
+                            <i class="bi bi-eye"></i>
+                        </button>
+                    </div>
                 </div>
 
                 <button type="submit" class="btn btn-github btn-sm w-100 py-2">Reset Password</button>
@@ -76,5 +87,35 @@
         </div>
 
     </div>
+
+    <script>
+        document.querySelectorAll('.toggle-password').forEach(function (button) {
+            button.addEventListener('click', function () {
+                var input = document.getElementById(this.dataset.target);
+                var icon = this.querySelector('i');
+                var showing = input.type === 'text';
+
+                input.type = showing ? 'password' : 'text';
+                icon.classList.toggle('bi-eye', showing);
+                icon.classList.toggle('bi-eye-slash', !showing);
+                this.setAttribute('aria-label', showing ? 'Show password' : 'Hide password');
+            });
+        });
+
+        // Auto-dismiss (5s) and manual-close for the flash banner — plain
+        // JS since this standalone page doesn't load Bootstrap's JS bundle.
+        document.querySelectorAll('[data-auto-dismiss]').forEach(function (alertEl) {
+            function dismiss() {
+                alertEl.style.transition = 'opacity 0.15s ease';
+                alertEl.style.opacity = '0';
+                setTimeout(function () { alertEl.remove(); }, 150);
+            }
+            var timer = setTimeout(dismiss, 5000);
+            alertEl.querySelector('[data-dismiss-alert]')?.addEventListener('click', function () {
+                clearTimeout(timer);
+                dismiss();
+            });
+        });
+    </script>
 </body>
 </html>

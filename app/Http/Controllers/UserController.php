@@ -77,7 +77,7 @@ class UserController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users,email,' . $user->id,
-            'alternative_email' => ['nullable', 'string', 'email', 'max:255', 'different:email'],
+            'alternative_email' => ['nullable', 'required_with:password', 'string', 'email', 'max:255', 'different:email'],
             'avatar' => 'nullable|image|max:4096',
             'remove_avatar' => 'nullable|boolean',
             'password' => 'nullable|string|min:8|confirmed',
@@ -85,6 +85,8 @@ class UserController extends Controller
             'company_ids' => 'nullable|array',
             'company_ids.*' => 'exists:companies,company_id',
             'location_id' => 'nullable|exists:locations,id',
+        ], [
+            'alternative_email.required_with' => 'An alternative email is required when setting a new password, so password reset codes have somewhere to go.',
         ]);
 
         if ($user->id === Auth::id() && $validated['role'] !== User::ROLE_SUPER_ADMIN) {

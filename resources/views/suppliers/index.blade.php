@@ -42,6 +42,7 @@
                         <th scope="col">SUPPLIER NAME</th>
                         <th scope="col">CONTACT PERSON</th>
                         <th scope="col">PHONE</th>
+                        <th scope="col">LOCATION</th>
                         <th scope="col">EMAIL</th>
                         <th scope="col" class="text-end" style="width: 160px;">ACTIONS</th>
                     </tr>
@@ -67,13 +68,22 @@
                                     <div class="text-muted">{{ $supplier->secondary_phone }}</div>
                                 @endif
                             </td>
+                            <td class="text-secondary small" style="max-width: 220px;">
+                                @if($supplier->address)
+                                    <span class="text-truncate d-inline-block" style="max-width: 220px; vertical-align: bottom;" title="{{ $supplier->address }}">
+                                        {{ $supplier->address }}
+                                    </span>
+                                @else
+                                    —
+                                @endif
+                            </td>
                             <td class="text-secondary small">{{ $supplier->email ?? '—' }}</td>
                             <td class="text-end">
                                 <div class="btn-group btn-group-sm" role="group">
                                     <a href="{{ route('suppliers.edit', $supplier->id) }}" class="btn btn-outline-github" title="Edit">
                                         <i class="bi bi-pencil"></i>
                                     </a>
-                                    <form action="{{ route('suppliers.destroy', $supplier->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this supplier?');">
+                                    <form action="{{ route('suppliers.destroy', $supplier->id) }}" method="POST" class="d-inline supplier-delete-form" data-active-products="{{ $supplier->active_products_count }}">
                                         @csrf
                                         @method('DELETE')
                                         <button type="submit" class="btn btn-outline-danger" title="Delete">
@@ -85,7 +95,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="6" class="text-center py-5 text-muted">
+                            <td colspan="7" class="text-center py-5 text-muted">
                                 <i class="bi bi-truck fs-2 d-block mb-2 text-secondary"></i>
                                 No suppliers found. Click <strong>New Supplier</strong> to get started.
                             </td>
@@ -105,6 +115,23 @@
             rows.forEach(row => {
                 let text = row.textContent.toLowerCase();
                 row.style.display = text.includes(filter) ? '' : 'none';
+            });
+        });
+
+        // Delete confirmation: warn more strongly when active products are
+        // still linked to this supplier, since deleting it removes that link.
+        document.querySelectorAll('.supplier-delete-form').forEach(function (form) {
+            form.addEventListener('submit', function (e) {
+                e.preventDefault();
+
+                const hasActiveProducts = parseInt(form.dataset.activeProducts, 10) > 0;
+                const message = hasActiveProducts
+                    ? 'Warning: There are products supplied by this supplier. Are you sure you want to delete this supplier?'
+                    : 'Are you sure you want to delete this supplier?';
+
+                if (confirm(message)) {
+                    form.submit();
+                }
             });
         });
     </script>

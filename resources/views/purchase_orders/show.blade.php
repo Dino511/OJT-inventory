@@ -41,173 +41,211 @@
         </div>
     </div>
 
-    <div class="row g-4">
-        <!-- Order Details -->
-        <div class="col-lg-8">
-            <div class="card shadow-sm">
-                <div class="card-header p-3 d-flex justify-content-between align-items-center">
-                    <span class="fw-semibold text-secondary small">ORDER ITEMS</span>
-                    @php
-                        $statusBadge = match($purchaseOrder->status) {
-                            'received' => ['bg-success-subtle text-success', 'Received'],
-                            'cancelled' => ['bg-secondary-subtle text-secondary', 'Cancelled'],
-                            default => ['bg-warning-subtle text-warning-emphasis', 'Pending'],
-                        };
-                    @endphp
+    @php
+        $statusBadge = match($purchaseOrder->status) {
+            'received' => ['bg-success-subtle text-success', 'Received'],
+            'cancelled' => ['bg-secondary-subtle text-secondary', 'Cancelled'],
+            default => ['bg-warning-subtle text-warning-emphasis', 'Pending'],
+        };
+    @endphp
+
+    <!-- Compact horizontal metadata bar -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-body py-3 px-4">
+            <div class="d-flex flex-wrap gap-4 row-gap-2 align-items-start po-meta-bar">
+                <div class="po-meta-item">
+                    <div class="text-secondary text-uppercase" style="font-size: 0.7rem;">Status</div>
                     <span class="badge {{ $statusBadge[0] }} border">{{ $statusBadge[1] }}</span>
                 </div>
-                <div class="table-responsive">
-                    <table class="table align-middle mb-0">
-                        <thead>
-                            <tr>
-                                <th scope="col">PRODUCT</th>
-                                <th scope="col" class="text-end">QUANTITY</th>
-                                <th scope="col" class="text-end">UNIT COST</th>
-                                <th scope="col" class="text-end">LINE TOTAL</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach($purchaseOrder->items as $item)
-                                <tr>
-                                    <td>
-                                        <div class="fw-semibold text-dark">{{ $item->product->name ?? 'N/A' }}</div>
-                                        <span class="badge bg-light text-secondary border font-monospace">{{ $item->product->code ?? 'N/A' }}</span>
-                                    </td>
-                                    <td class="text-end">{{ $item->quantity }}</td>
-                                    <td class="text-end">₱{{ number_format($item->unit_cost ?? 0, 2) }}</td>
-                                    <td class="text-end">₱{{ number_format($item->line_total, 2) }}</td>
-                                </tr>
-                            @endforeach
-                        </tbody>
-                        <tfoot>
-                            <tr class="fw-bold">
-                                <td colspan="3" class="text-end">Total</td>
-                                <td class="text-end">₱{{ number_format($purchaseOrder->total_cost, 2) }}</td>
-                            </tr>
-                        </tfoot>
-                    </table>
+                <div class="po-meta-item">
+                    <div class="text-secondary text-uppercase" style="font-size: 0.7rem;">Supplier</div>
+                    <div class="fw-semibold small">{{ $purchaseOrder->supplier_name }}</div>
                 </div>
-            </div>
-        </div>
-
-        <!-- Order Info -->
-        <div class="col-lg-4">
-            <div class="card shadow-sm">
-                <div class="card-header p-3">
-                    <span class="fw-semibold text-secondary small">ORDER INFO</span>
+                <div class="po-meta-item">
+                    <div class="text-secondary text-uppercase" style="font-size: 0.7rem;">Company</div>
+                    <div class="fw-semibold small">{{ $purchaseOrder->company->name ?? 'N/A' }}</div>
                 </div>
-                <div class="card-body p-4">
-                    <dl class="row mb-0 small">
-                        <dt class="col-sm-5 text-secondary">Supplier</dt>
-                        <dd class="col-sm-7">{{ $purchaseOrder->supplier_name }}</dd>
-
-                        <dt class="col-sm-5 text-secondary">Company</dt>
-                        <dd class="col-sm-7">{{ $purchaseOrder->company->name ?? 'N/A' }}</dd>
-
-                        <dt class="col-sm-5 text-secondary">Deliver To (Warehouse)</dt>
-                        <dd class="col-sm-7">{{ $purchaseOrder->location->name ?? 'N/A' }}</dd>
-
-                        <dt class="col-sm-5 text-secondary">Order Date</dt>
-                        <dd class="col-sm-7">{{ $purchaseOrder->order_date?->format('M j, Y') }}</dd>
-
-                        <dt class="col-sm-5 text-secondary">Expected Delivery</dt>
-                        <dd class="col-sm-7">
-                            {{ $purchaseOrder->expected_delivery_date?->format('M j, Y') ?? 'N/A' }}
-                            @if(auth()->user()->isSuperAdmin())
-                                <a href="{{ route('deliveries.edit', $purchaseOrder) }}" class="small text-decoration-none ms-1" title="Edit dates">
-                                    <i class="bi bi-pencil"></i>
-                                </a>
-                            @endif
-                        </dd>
-
-                        <dt class="col-sm-5 text-secondary">Created By</dt>
-                        <dd class="col-sm-7">{{ $purchaseOrder->creator->name ?? 'N/A' }}</dd>
-
-                        @if($purchaseOrder->isReceived())
-                            <dt class="col-sm-5 text-secondary">Received By</dt>
-                            <dd class="col-sm-7">{{ $purchaseOrder->receiver->name ?? 'N/A' }}</dd>
-
-                            <dt class="col-sm-5 text-secondary">Received At</dt>
-                            <dd class="col-sm-7">{{ $purchaseOrder->received_at?->format('M j, Y g:i A') }}</dd>
+                <div class="po-meta-item">
+                    <div class="text-secondary text-uppercase" style="font-size: 0.7rem;">Deliver To (Warehouse)</div>
+                    <div class="fw-semibold small">{{ $purchaseOrder->location->name ?? 'N/A' }}</div>
+                </div>
+                <div class="po-meta-item">
+                    <div class="text-secondary text-uppercase" style="font-size: 0.7rem;">Order Date</div>
+                    <div class="fw-semibold small">{{ $purchaseOrder->order_date?->format('M j, Y') }}</div>
+                </div>
+                <div class="po-meta-item">
+                    <div class="text-secondary text-uppercase" style="font-size: 0.7rem;">Expected Delivery</div>
+                    <div class="fw-semibold small">
+                        {{ $purchaseOrder->expected_delivery_date?->format('M j, Y') ?? 'N/A' }}
+                        @if(auth()->user()->isSuperAdmin())
+                            <a href="{{ route('deliveries.edit', $purchaseOrder) }}" class="small text-decoration-none ms-1" title="Edit dates">
+                                <i class="bi bi-pencil"></i>
+                            </a>
                         @endif
-
-                        @if($purchaseOrder->notes)
-                            <dt class="col-sm-5 text-secondary">Notes</dt>
-                            <dd class="col-sm-7">{{ $purchaseOrder->notes }}</dd>
-                        @endif
-                    </dl>
+                    </div>
                 </div>
+                <div class="po-meta-item">
+                    <div class="text-secondary text-uppercase" style="font-size: 0.7rem;">Created By</div>
+                    <div class="fw-semibold small">{{ $purchaseOrder->creator->name ?? 'N/A' }}</div>
+                </div>
+                @if($purchaseOrder->isReceived())
+                    <div class="po-meta-item">
+                        <div class="text-secondary text-uppercase" style="font-size: 0.7rem;">Received By</div>
+                        <div class="fw-semibold small">{{ $purchaseOrder->receiver->name ?? 'N/A' }}</div>
+                    </div>
+                    <div class="po-meta-item">
+                        <div class="text-secondary text-uppercase" style="font-size: 0.7rem;">Received At</div>
+                        <div class="fw-semibold small">{{ $purchaseOrder->received_at?->format('M j, Y g:i A') }}</div>
+                    </div>
+                @endif
+                @if($purchaseOrder->notes)
+                    <div class="po-meta-item" style="flex-basis: 100%;">
+                        <div class="text-secondary text-uppercase" style="font-size: 0.7rem;">Notes</div>
+                        <div class="fw-semibold small">{{ $purchaseOrder->notes }}</div>
+                    </div>
+                @endif
+
+                @if($purchaseOrder->supplier)
+                    <div class="ms-auto align-self-center">
+                        <button type="button" class="btn btn-outline-github btn-sm" data-bs-toggle="collapse" data-bs-target="#supplierDetailsCollapse" aria-expanded="false" aria-controls="supplierDetailsCollapse">
+                            <i class="bi bi-truck me-1"></i> Supplier Details
+                            <i class="bi bi-chevron-down ms-1"></i>
+                        </button>
+                    </div>
+                @endif
             </div>
 
             @if($purchaseOrder->supplier)
-                <div class="card shadow-sm mt-4">
-                    <div class="card-header p-3">
-                        <span class="fw-semibold text-secondary small">SUPPLIER DETAILS</span>
-                    </div>
-                    <div class="card-body p-4">
-                        <dl class="row mb-0 small">
-                            <dt class="col-sm-5 text-secondary">Name</dt>
-                            <dd class="col-sm-7">{{ $purchaseOrder->supplier->name }}</dd>
-
-                            <dt class="col-sm-5 text-secondary">Contact Person</dt>
-                            <dd class="col-sm-7">
+                <div class="collapse mt-3 pt-3 border-top" id="supplierDetailsCollapse">
+                    <div class="d-flex flex-wrap gap-4 row-gap-2">
+                        <div class="po-meta-item">
+                            <div class="text-secondary text-uppercase" style="font-size: 0.7rem;">Name</div>
+                            <div class="fw-semibold small">{{ $purchaseOrder->supplier->name }}</div>
+                        </div>
+                        <div class="po-meta-item">
+                            <div class="text-secondary text-uppercase" style="font-size: 0.7rem;">Contact Person</div>
+                            <div class="fw-semibold small">
                                 {{ $purchaseOrder->supplier->contact_person }}
                                 @if($purchaseOrder->supplier->secondary_contact_person)
-                                    <div class="text-muted">{{ $purchaseOrder->supplier->secondary_contact_person }}</div>
+                                    <div class="text-muted fw-normal">{{ $purchaseOrder->supplier->secondary_contact_person }}</div>
                                 @endif
-                            </dd>
-
-                            <dt class="col-sm-5 text-secondary">Phone</dt>
-                            <dd class="col-sm-7">
+                            </div>
+                        </div>
+                        <div class="po-meta-item">
+                            <div class="text-secondary text-uppercase" style="font-size: 0.7rem;">Phone</div>
+                            <div class="fw-semibold small">
                                 {{ $purchaseOrder->supplier->phone ?? '—' }}
                                 @if($purchaseOrder->supplier->secondary_phone)
-                                    <div class="text-muted">{{ $purchaseOrder->supplier->secondary_phone }}</div>
+                                    <div class="text-muted fw-normal">{{ $purchaseOrder->supplier->secondary_phone }}</div>
                                 @endif
-                            </dd>
-
-                            <dt class="col-sm-5 text-secondary">Email</dt>
-                            <dd class="col-sm-7">{{ $purchaseOrder->supplier->email ?? '—' }}</dd>
-
-                            <dt class="col-sm-5 text-secondary">Address</dt>
-                            <dd class="col-sm-7">{{ $purchaseOrder->supplier->address ?? '—' }}</dd>
-                        </dl>
+                            </div>
+                        </div>
+                        <div class="po-meta-item">
+                            <div class="text-secondary text-uppercase" style="font-size: 0.7rem;">Email</div>
+                            <div class="fw-semibold small">{{ $purchaseOrder->supplier->email ?? '—' }}</div>
+                        </div>
+                        <div class="po-meta-item">
+                            <div class="text-secondary text-uppercase" style="font-size: 0.7rem;">Address</div>
+                            <div class="fw-semibold small">{{ $purchaseOrder->supplier->address ?? '—' }}</div>
+                        </div>
                     </div>
                 </div>
             @endif
         </div>
-
-        @if($activityLogs->isNotEmpty())
-            <!-- Stock Activity produced by receiving this order -->
-            <div class="col-12">
-                <div class="card shadow-sm">
-                    <div class="card-header p-3 d-flex justify-content-between align-items-center">
-                        <span class="fw-semibold text-secondary small">STOCK ACTIVITY</span>
-                        <a href="{{ route('inventory.history.index') }}" class="small text-decoration-none">View all inventory history</a>
-                    </div>
-                    <div class="table-responsive">
-                        <table class="table align-middle mb-0">
-                            <thead>
-                                <tr>
-                                    <th scope="col" style="width: 170px;">DATE &amp; TIME</th>
-                                    <th scope="col" style="width: 110px;">ACTION</th>
-                                    <th scope="col" style="width: 160px;">USER</th>
-                                    <th scope="col">DETAILS</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach($activityLogs as $log)
-                                    <tr>
-                                        <td class="text-secondary small">{{ $log->created_at->format('M j, Y g:i A') }}</td>
-                                        <td>@include('inventory._history-action-badge')</td>
-                                        <td class="text-secondary small">{{ $log->user_name ?? 'System' }}</td>
-                                        <td class="small">@include('inventory._history-details')</td>
-                                    </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        @endif
     </div>
+
+    <!-- Full-width Order Items -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header p-3">
+            <span class="fw-semibold text-secondary small">ORDER ITEMS</span>
+        </div>
+        <div class="table-responsive">
+            <table class="table align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th scope="col">PRODUCT</th>
+                        <th scope="col" class="text-end">QUANTITY</th>
+                        <th scope="col" class="text-end">UNIT COST</th>
+                        <th scope="col" class="text-end">LINE TOTAL</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach($purchaseOrder->items as $item)
+                        <tr>
+                            <td>
+                                <div class="fw-semibold text-dark">{{ $item->product->name ?? 'N/A' }}</div>
+                                <span class="badge bg-light text-secondary border font-monospace">{{ $item->product->code ?? 'N/A' }}</span>
+                            </td>
+                            <td class="text-end">{{ $item->quantity }}</td>
+                            <td class="text-end">₱{{ number_format($item->unit_cost ?? 0, 2) }}</td>
+                            <td class="text-end">₱{{ number_format($item->line_total, 2) }}</td>
+                        </tr>
+                    @endforeach
+                </tbody>
+                <tfoot>
+                    <tr class="fw-bold">
+                        <td colspan="3" class="text-end">Total</td>
+                        <td class="text-end">₱{{ number_format($purchaseOrder->total_cost, 2) }}</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+
+    @if($activityLogs->isNotEmpty())
+        <!-- Stock Activity produced by receiving this order -->
+        <div class="card shadow-sm">
+            <div class="card-header p-3 d-flex justify-content-between align-items-center">
+                <span class="fw-semibold text-secondary small">STOCK ACTIVITY</span>
+                <a href="{{ route('inventory.history.index') }}" class="small text-decoration-none">View all inventory history</a>
+            </div>
+            <div class="table-responsive">
+                <table class="table align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th scope="col" style="width: 170px;">DATE &amp; TIME</th>
+                            <th scope="col" style="width: 110px;">ACTION</th>
+                            <th scope="col" style="width: 160px;">USER</th>
+                            <th scope="col">DETAILS</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($activityLogs as $log)
+                            <tr>
+                                <td class="text-secondary small">{{ $log->created_at->format('M j, Y g:i A') }}</td>
+                                <td>@include('inventory._history-action-badge')</td>
+                                <td class="text-secondary small">{{ $log->user_name ?? 'System' }}</td>
+                                <td class="small">@include('inventory._history-details')</td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    @endif
 @endsection
+
+@push('styles')
+    <style>
+        .po-meta-item {
+            min-width: 120px;
+        }
+        .po-meta-bar .bi-chevron-down {
+            transition: transform 0.15s ease;
+        }
+        .po-meta-bar .btn[aria-expanded="true"] .bi-chevron-down {
+            transform: rotate(180deg);
+        }
+    </style>
+@endpush
+
+@push('scripts')
+    <script>
+        const supplierCollapseToggle = document.querySelector('[data-bs-target="#supplierDetailsCollapse"]');
+        const supplierCollapseEl = document.getElementById('supplierDetailsCollapse');
+        if (supplierCollapseToggle && supplierCollapseEl) {
+            supplierCollapseEl.addEventListener('show.bs.collapse', () => supplierCollapseToggle.setAttribute('aria-expanded', 'true'));
+            supplierCollapseEl.addEventListener('hide.bs.collapse', () => supplierCollapseToggle.setAttribute('aria-expanded', 'false'));
+        }
+    </script>
+@endpush

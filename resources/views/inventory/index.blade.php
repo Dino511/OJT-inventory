@@ -62,6 +62,7 @@
                                 QUANTITY <i class="bi {{ $numIcon('quantity') }} small"></i>
                             </a>
                         </th>
+                        <th>STATUS</th>
                         <th class="text-end" style="width: 270px;">ACTIONS</th>
                     </tr>
                 </thead>
@@ -82,37 +83,43 @@
                                     @endif
                                 </span>
                             </td>
+                            @php [$statusClass, $statusLabel] = $item->stock_status_badge; @endphp
                             <td>
-                                <span class="badge {{ ($item->quantity ?? $item->stock ?? 0) > 10 ? 'bg-success-subtle text-success border border-success-subtle' : 'bg-danger-subtle text-danger border border-danger-subtle' }} px-2 py-1">
+                                <span class="badge {{ $statusClass }} border px-2 py-1">
                                     {{ $item->quantity ?? $item->stock ?? 0 }} units
                                 </span>
                             </td>
+                            <td>
+                                <span class="badge {{ $statusClass }} border px-2 py-1">{{ $statusLabel }}</span>
+                            </td>
                             <td class="text-end">
-                                <a href="{{ route('inventory.history', $item->id) }}" class="btn btn-outline-github btn-sm me-1" title="History">
-                                    <i class="bi bi-clock-history"></i>
-                                </a>
-                                <a href="{{ route('inventory.edit', $item->id) }}" class="btn btn-outline-github btn-sm me-1">
-                                    <i class="bi bi-pencil me-1"></i> Edit
-                                </a>
-                                @if(($item->quantity ?? 0) > 0)
-                                    <a href="{{ route('inventory.transfer', $item->id) }}" class="btn btn-outline-github btn-sm me-1" title="Transfer stock to another location">
-                                        <i class="bi bi-arrow-left-right"></i>
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <a href="{{ route('inventory.history', $item->id) }}" class="btn btn-outline-github" title="History">
+                                        <i class="bi bi-clock-history"></i>
                                     </a>
-                                @endif
-                                @if(auth()->user()->isSuperAdmin())
-                                    <form action="{{ route('inventory.destroy', $item->id) }}" method="POST" class="d-inline-block" onsubmit="return confirm('Delete this stock record? This cannot be undone.');">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="btn btn-outline-danger btn-sm" title="Delete">
-                                            <i class="bi bi-trash"></i>
-                                        </button>
-                                    </form>
-                                @endif
+                                    <a href="{{ route('inventory.edit', $item->id) }}" class="btn btn-outline-github" title="Edit">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    @if(($item->quantity ?? 0) > 0)
+                                        <a href="{{ route('inventory.transfer', $item->id) }}" class="btn btn-outline-github" title="Transfer stock to another location">
+                                            <i class="bi bi-arrow-left-right"></i>
+                                        </a>
+                                    @endif
+                                    @if(auth()->user()->isSuperAdmin())
+                                        <form action="{{ route('inventory.destroy', $item->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Delete this stock record? This cannot be undone.');">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="btn btn-outline-danger" title="Delete">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </form>
+                                    @endif
+                                </div>
                             </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="5" class="text-center py-5 text-muted">
+                            <td colspan="6" class="text-center py-5 text-muted">
                                 <i class="bi bi-inbox fs-2 d-block mb-2 text-secondary"></i>
                                 No inventory items found.
                             </td>
