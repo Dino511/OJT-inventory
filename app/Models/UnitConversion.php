@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class UnitConversion extends Model
 {
@@ -36,6 +37,15 @@ class UnitConversion extends Model
     public function toUnit(): BelongsTo
     {
         return $this->belongsTo(UnitOfMeasure::class, 'to_unit_id');
+    }
+
+    /**
+     * Every product that has selected this as its one applicable
+     * conversion (see Product::unitConversion()).
+     */
+    public function products(): HasMany
+    {
+        return $this->hasMany(Product::class, 'unit_conversion_id');
     }
 
     /**

@@ -14,106 +14,131 @@
         <h3 class="fw-bold mb-0">Create Product</h3>
     </div>
 
-    <div class="row">
-        <div class="col-md-8 col-lg-6">
-            <div class="card shadow-sm">
-                <div class="card-header p-3">
-                    <span class="fw-semibold text-secondary small">NEW PRODUCT DETAILS</span>
-                </div>
-                <div class="card-body p-4">
-                    <form action="{{ route('products.store') }}" method="POST">
-                        @csrf
+    <div class="card shadow-sm">
+        <div class="card-header p-3">
+            <span class="fw-semibold text-secondary small">NEW PRODUCT DETAILS</span>
+        </div>
+        <div class="card-body p-4">
+            <form action="{{ route('products.store') }}" method="POST" enctype="multipart/form-data">
+                @csrf
 
-                        <!-- Company Selection -->
-                        <div class="mb-3">
-                            <label for="company_id" class="form-label small fw-semibold">Company</label>
-                            <select id="company_id" 
-                                    name="company_id" 
-                                    class="form-select form-select-sm @error('company_id') is-invalid @enderror" 
+                <div class="row">
+                    <!-- Left column: identity -->
+                    <div class="col-lg-6">
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="company_id" class="form-label small fw-semibold">Company</label>
+                                <select id="company_id"
+                                        name="company_id"
+                                        class="form-select form-select-sm @error('company_id') is-invalid @enderror"
+                                        required>
+                                    <option value="" disabled {{ old('company_id') ? '' : 'selected' }}>Select a Company</option>
+                                    @foreach($companies as $company)
+                                        <option value="{{ $company->company_id }}" {{ old('company_id') == $company->company_id ? 'selected' : '' }}>
+                                            {{ $company->name }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                @error('company_id')
+                                    <div class="invalid-feedback d-block small">{{ $message }}</div>
+                                @enderror
+                            </div>
+
+                            <div class="col-md-6">
+                                <label for="category_id" class="form-label small fw-semibold">Category</label>
+                                <select name="category_id" id="category_id" class="form-select form-select-sm @error('category_id') is-invalid @enderror" required>
+                                    <option value="">Select Category</option>
+                                    @foreach($categories as $category)
+                                        <option value="{{ $category->id }}" {{ old('category_id') == $category->id ? 'selected' : '' }}>
+                                            {{ $category->name }}
+                                        </option>
+                                        @foreach($category->children as $child)
+                                            <option value="{{ $child->id }}" {{ old('category_id') == $child->id ? 'selected' : '' }}>
+                                                — {{ $child->name }}
+                                            </option>
+                                        @endforeach
+                                    @endforeach
+                                </select>
+                                @error('category_id')
+                                    <div class="invalid-feedback d-block small">{{ $message }}</div>
+                                @enderror
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-8">
+                                <label for="name" class="form-label small fw-semibold">Product Name</label>
+                                <input type="text"
+                                       id="name"
+                                       name="name"
+                                       class="form-control form-control-sm @error('name') is-invalid @enderror"
+                                       value="{{ old('name') }}"
+                                       placeholder="e.g. Wireless Mouse"
+                                       required>
+                                @error('name')
+                                    <div class="invalid-feedback d-block small">{{ $message }}</div>
+                                @enderror
+                            </div>
+
+                            <div class="col-md-4">
+                                <label for="code" class="form-label small fw-semibold">SKU</label>
+                                <input type="text"
+                                    id="code"
+                                    name="code"
+                                    class="form-control form-control-sm @error('code') is-invalid @enderror"
+                                    value="{{ old('code') }}"
+                                    placeholder="e.g. PROD-001"
                                     required>
-                                <option value="" disabled {{ old('company_id') ? '' : 'selected' }}>Select a Company</option>
-                                @foreach($companies as $company)
-                                    <option value="{{ $company->company_id }}" {{ old('company_id') == $company->company_id ? 'selected' : '' }}>
-                                        {{ $company->name }}
-                                    </option>
-                                @endforeach
-                            </select>
-                            @error('company_id')
-                                <div class="invalid-feedback d-block small">{{ $message }}</div>
-                            @enderror
+                                @error('code')
+                                    <div class="invalid-feedback d-block small">{{ $message }}</div>
+                                @enderror
+                            </div>
                         </div>
 
-                        <!-- Category Selection -->
-                        <div class="mb-3">
-                            <label for="category_id" class="form-label small fw-semibold">Category</label>
-                            <select name="category_id" id="category_id" class="form-control form-control-sm @error('category_id') is-invalid @enderror" required>
-                                <option value="">Select Category</option>
-                                @foreach($categories as $category)
-                                    <option value="{{ $category->id }}" {{ old('category_id') == $category->id ? 'selected' : '' }}>
-                                        {{ $category->name }}
-                                    </option>
-                                @endforeach
-                            </select>
-                            @error('category_id')
-                                <div class="invalid-feedback d-block small">{{ $message }}</div>
-                            @enderror
-                        </div>
-
-                        <!-- Product Name -->
-                        <div class="mb-3">
-                            <label for="name" class="form-label small fw-semibold">Product Name</label>
-                            <input type="text" 
-                                   id="name" 
-                                   name="name" 
-                                   class="form-control form-control-sm @error('name') is-invalid @enderror" 
-                                   value="{{ old('name') }}" 
-                                   placeholder="e.g. Wireless Mouse" 
-                                   required>
-                            @error('name')
-                                <div class="invalid-feedback d-block small">{{ $message }}</div>
-                            @enderror
-                        </div>
-
-                        <!-- Description Field -->
                         <div class="mb-3">
                             <label for="description" class="form-label small fw-semibold">Description</label>
-                            <textarea id="description" 
-                                      name="description" 
-                                      rows="3" 
-                                      class="form-control form-control-sm @error('description') is-invalid @enderror" 
+                            <textarea id="description"
+                                      name="description"
+                                      rows="3"
+                                      class="form-control form-control-sm @error('description') is-invalid @enderror"
                                       placeholder="Enter product details, specifications, or notes...">{{ old('description') }}</textarea>
                             @error('description')
                                 <div class="invalid-feedback d-block small">{{ $message }}</div>
                             @enderror
                         </div>
 
-                        <!-- SKU / Code Field -->
-                        <div class="mb-3">
-                            <label for="code" class="form-label small fw-semibold">SKU</label>
-                            <input type="text" 
-                                id="code" 
-                                name="code" 
-                                class="form-control form-control-sm @error('code') is-invalid @enderror" 
-                                value="{{ old('code') }}" 
-                                placeholder="e.g. PROD-001" 
-                                required>
-                            @error('code')
-                                <div class="invalid-feedback d-block small">{{ $message }}</div>
-                            @enderror
+                        <!-- Product Photo -->
+                        <div class="mb-3 mb-lg-0">
+                            <label for="photo" class="form-label small fw-semibold">Photo</label>
+                            <div class="d-flex align-items-start gap-3">
+                                <div class="flex-grow-1">
+                                    <input type="file"
+                                           id="photo"
+                                           name="photo"
+                                           accept="image/*"
+                                           class="form-control form-control-sm @error('photo') is-invalid @enderror">
+                                    <div class="form-text small">Optional. JPG, PNG, or WebP, up to 4MB.</div>
+                                    @error('photo')
+                                        <div class="invalid-feedback d-block small">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                                <img id="photoPreview" src="" alt="Preview" class="img-thumbnail d-none" style="max-height: 60px;">
+                            </div>
                         </div>
+                    </div>
 
-                        <!-- Base Unit & Value Fields Section -->
+                    <!-- Right column: units, conversions, pricing -->
+                    <div class="col-lg-6 mt-4 mt-lg-0">
                         <div class="row mb-3">
-                            <!-- Base Unit Value Quantity Field -->
                             <div class="col-md-4">
                                 <label for="unit_value" class="form-label small fw-semibold">Unit Value / Qty</label>
-                                <input type="number" 
+                                <input type="number"
                                        step="any"
-                                       id="unit_value" 
-                                       name="unit_value" 
-                                       class="form-control form-control-sm @error('unit_value') is-invalid @enderror" 
-                                       value="{{ old('unit_value', 1) }}" 
-                                       placeholder="e.g. 100" 
+                                       id="unit_value"
+                                       name="unit_value"
+                                       class="form-control form-control-sm @error('unit_value') is-invalid @enderror"
+                                       value="{{ old('unit_value', 1) }}"
+                                       placeholder="e.g. 100"
                                        required>
                                 @error('unit_value')
                                     <div class="invalid-feedback d-block small">{{ $message }}</div>
@@ -123,21 +148,21 @@
                             <!-- Base Unit Selection with Browse Modal Trigger -->
                             <div class="col-md-8">
                                 <label for="selected_base_unit_name" class="form-label small fw-semibold">Base Unit</label>
-                                
+
                                 <!-- Hidden Input submitted to Controller -->
-                                <input type="hidden" 
-                                       id="base_unit_id" 
-                                       name="base_unit_id" 
+                                <input type="hidden"
+                                       id="base_unit_id"
+                                       name="base_unit_id"
                                        value="{{ old('base_unit_id') }}">
 
                                 <!-- Display Input & Browse Button -->
                                 <div class="input-group input-group-sm">
-                                    <input type="text" 
-                                           id="selected_base_unit_name" 
-                                           class="form-control @error('base_unit_id') is-invalid @enderror" 
-                                           placeholder="Click 'Browse'..." 
-                                           readonly 
-                                           data-bs-toggle="modal" 
+                                    <input type="text"
+                                           id="selected_base_unit_name"
+                                           class="form-control @error('base_unit_id') is-invalid @enderror"
+                                           placeholder="Click 'Browse'..."
+                                           readonly
+                                           data-bs-toggle="modal"
                                            data-bs-target="#selectBaseUnitModal">
                                     <button type="button" class="btn btn-outline-secondary px-3" data-bs-toggle="modal" data-bs-target="#selectBaseUnitModal">
                                         <i class="bi bi-search me-1"></i> Browse
@@ -147,6 +172,15 @@
                                     <div class="invalid-feedback d-block small">{{ $message }}</div>
                                 @enderror
                             </div>
+                        </div>
+
+                        <!-- Applicable Unit Conversion -->
+                        <div class="mb-3">
+                            <label class="form-label small fw-semibold">Applicable Unit Conversion <span class="text-muted fw-normal">(optional)</span></label>
+                            <div id="conversionsList" class="border rounded p-2 d-flex flex-wrap column-gap-4 row-gap-1" style="max-height: 110px; overflow-y: auto;">
+                                <span class="text-muted small">Select a base unit first.</span>
+                            </div>
+                            <div class="form-text small">Pick the one conversion (if any) that applies to this product.</div>
                         </div>
 
                         <!-- Pricing Row -->
@@ -179,18 +213,35 @@
                             </div>
                         </div>
 
-                        <!-- Action Buttons -->
-                        <div class="d-flex align-items-center gap-2 mt-4 pt-2 border-top">
-                            <button type="submit" class="btn btn-github btn-sm px-3">
-                                <i class="bi bi-plus-lg me-1"></i> Save Product
-                            </button>
-                            <a href="{{ route('products.index') }}" class="btn btn-outline-github btn-sm">
-                                Cancel
-                            </a>
+                        <!-- Suppliers -->
+                        <div class="mb-3">
+                            <label class="form-label small fw-semibold">Suppliers <span class="text-muted fw-normal">(optional)</span></label>
+                            <div class="border rounded p-2 d-flex flex-wrap column-gap-4 row-gap-1" style="max-height: 110px; overflow-y: auto;">
+                                @forelse($suppliers as $supplier)
+                                    <div class="form-check" style="min-width: 160px;">
+                                        <input type="checkbox" name="supplier_ids[]" value="{{ $supplier->id }}" id="supplier_{{ $supplier->id }}"
+                                               class="form-check-input" {{ in_array($supplier->id, old('supplier_ids', [])) ? 'checked' : '' }}>
+                                        <label for="supplier_{{ $supplier->id }}" class="form-check-label small">{{ $supplier->name }}</label>
+                                    </div>
+                                @empty
+                                    <span class="text-muted small">No suppliers registered yet — <a href="{{ route('suppliers.create') }}">add one first</a>.</span>
+                                @endforelse
+                            </div>
+                            <div class="form-text small">Check which suppliers can provide this product — used to filter the product list on a Purchase Order once a supplier is picked.</div>
                         </div>
-                    </form>
+                    </div>
                 </div>
-            </div>
+
+                <!-- Action Buttons -->
+                <div class="d-flex align-items-center gap-2 mt-2 pt-3 border-top">
+                    <button type="submit" class="btn btn-github btn-sm px-3">
+                        <i class="bi bi-plus-lg me-1"></i> Save Product
+                    </button>
+                    <a href="{{ route('products.index') }}" class="btn btn-outline-github btn-sm">
+                        Cancel
+                    </a>
+                </div>
+            </form>
         </div>
     </div>
 
@@ -244,6 +295,38 @@
     </div>
 
     <script>
+    // Every registered unit conversion — filtered client-side to whichever
+    // ones start from the currently selected base unit.
+    const allConversions = @json($conversionOptions);
+    const selectedConversionId = @json(old('unit_conversion_id', ''));
+
+    function syncConversionOptions() {
+        const baseUnitId = document.getElementById('base_unit_id').value;
+        const list = document.getElementById('conversionsList');
+        const matches = allConversions.filter(c => String(c.from_unit_id) === String(baseUnitId));
+
+        if (!baseUnitId) {
+            list.innerHTML = '<span class="text-muted small">Select a base unit first.</span>';
+        } else if (matches.length === 0) {
+            list.innerHTML = '<span class="text-muted small">No conversions defined yet for this base unit.</span>';
+        } else {
+            const noneChecked = !selectedConversionId ? 'checked' : '';
+            list.innerHTML = `
+                <div class="form-check" style="min-width: 170px;">
+                    <input type="radio" name="unit_conversion_id" value="" id="conversion_none"
+                           class="form-check-input" ${noneChecked}>
+                    <label for="conversion_none" class="form-check-label small text-muted">None</label>
+                </div>
+            ` + matches.map(c => `
+                <div class="form-check" style="min-width: 170px;">
+                    <input type="radio" name="unit_conversion_id" value="${c.id}" id="conversion_${c.id}"
+                           class="form-check-input" ${String(selectedConversionId) === String(c.id) ? 'checked' : ''}>
+                    <label for="conversion_${c.id}" class="form-check-label small">${c.label}</label>
+                </div>
+            `).join('');
+        }
+    }
+
     document.addEventListener('DOMContentLoaded', function() {
         // Pre-populate display field on page load if old() exists (e.g. after validation failure)
         let hiddenInputId = document.getElementById('base_unit_id').value;
@@ -253,6 +336,7 @@
                 document.getElementById('selected_base_unit_name').value = matchingBtn.getAttribute('data-name');
             }
         }
+        syncConversionOptions();
 
         // Handle selection click events from the modal items
         const selectButtons = document.querySelectorAll('.select-unit-btn');
@@ -263,10 +347,26 @@
 
                 // Set value for hidden input validated by Laravel controller
                 document.getElementById('base_unit_id').value = unitId;
-                
+
                 // Set value for visual text input field
                 document.getElementById('selected_base_unit_name').value = unitName;
+
+                syncConversionOptions();
             });
+        });
+
+        // Live preview of the chosen photo before it's uploaded.
+        const photoInput = document.getElementById('photo');
+        const photoPreview = document.getElementById('photoPreview');
+        photoInput?.addEventListener('change', function () {
+            const file = this.files[0];
+            if (!file) {
+                photoPreview.classList.add('d-none');
+                photoPreview.src = '';
+                return;
+            }
+            photoPreview.src = URL.createObjectURL(file);
+            photoPreview.classList.remove('d-none');
         });
     });
     </script>

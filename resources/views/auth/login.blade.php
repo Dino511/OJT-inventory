@@ -22,8 +22,9 @@
         </div>
 
         @if(session('success'))
-            <div class="alert alert-success border-0 shadow-sm w-100 max-w-350 mb-3" style="max-width: 350px;" role="alert">
-                {{ session('success') }}
+            <div class="alert alert-success border-0 shadow-sm w-100 max-w-350 mb-3 d-flex align-items-center justify-content-between" style="max-width: 350px;" role="alert" data-auto-dismiss>
+                <span>{{ session('success') }}</span>
+                <button type="button" class="btn-close ms-2" aria-label="Close" data-dismiss-alert></button>
             </div>
         @endif
 
@@ -43,16 +44,23 @@
 
                 <div class="mb-3">
                     <label for="password" class="form-label small fw-semibold">Password</label>
-                    <input type="password" id="password" name="password" 
+                    <input type="password" id="password" name="password"
                            class="form-control form-control-sm @error('password') is-invalid @enderror" required>
                     @error('password')
                         <div class="invalid-feedback small">{{ $message }}</div>
                     @enderror
+                    <div class="form-check mt-1">
+                        <input type="checkbox" class="form-check-input" id="showPassword">
+                        <label class="form-check-label small" for="showPassword">Show password</label>
+                    </div>
                 </div>
 
-                <div class="mb-3 form-check">
-                    <input type="checkbox" class="form-check-input" id="remember" name="remember">
-                    <label class="form-check-label small" for="remember">Remember me</label>
+                <div class="mb-3 d-flex justify-content-between align-items-center">
+                    <div class="form-check">
+                        <input type="checkbox" class="form-check-input" id="remember" name="remember">
+                        <label class="form-check-label small" for="remember">Remember me</label>
+                    </div>
+                    <a href="{{ route('password.request') }}" class="small text-decoration-none">Forgot password?</a>
                 </div>
 
                 <button type="submit" class="btn btn-github btn-sm w-100 py-2">Sign in</button>
@@ -64,5 +72,26 @@
         </div>
 
     </div>
+
+    <script>
+        document.getElementById('showPassword')?.addEventListener('change', function () {
+            document.getElementById('password').type = this.checked ? 'text' : 'password';
+        });
+
+        // Auto-dismiss (5s) and manual-close for the flash banner — plain
+        // JS since this standalone page doesn't load Bootstrap's JS bundle.
+        document.querySelectorAll('[data-auto-dismiss]').forEach(function (alertEl) {
+            function dismiss() {
+                alertEl.style.transition = 'opacity 0.15s ease';
+                alertEl.style.opacity = '0';
+                setTimeout(function () { alertEl.remove(); }, 150);
+            }
+            var timer = setTimeout(dismiss, 5000);
+            alertEl.querySelector('[data-dismiss-alert]')?.addEventListener('click', function () {
+                clearTimeout(timer);
+                dismiss();
+            });
+        });
+    </script>
 </body>
 </html>

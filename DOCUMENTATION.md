@@ -1,6 +1,6 @@
 # Inventory Management System — Documentation
 
-A Laravel 13 web application for tracking companies, their product categories, storage locations, products, and the units of measure products are sold in.
+A Laravel 13 web application for managing companies, product categories, storage locations/stores, products, suppliers, purchase orders, stock transfers, and inventory levels — with role-based access for Super Admins, Business Admins, and Moderators.
 
 This app shares its database with a companion **POS (point-of-sale) application** — see [Companion POS application](#companion-pos-application) in the Developer Guide.
 
@@ -15,87 +15,136 @@ This document has two parts:
 
 ### Signing in
 
-- Go to `/login` to sign in, or `/register` to create a new account (name, email, password).
-- All pages except the login/register screens require you to be signed in.
-- Use **Sign out** in the top-right of the navigation bar to log out.
+- Go to `/login` to sign in, or `/register` to create a new account (name, email, alternative email, password). New self-registered accounts get the **Moderator** role and no company access until a Super Admin grants it — moderators can already sign in to the companion POS app.
+- Forgot your password? Use **Forgot password?** on the login page — it emails a 6-digit code (valid 15 minutes) to your **alternative email** if you have one set, otherwise your primary email. Enter it on the reset page along with a new password.
+- All pages except login/register/forgot-password/reset-password require you to be signed in.
+- Success/status flash banners across the app (e.g. "Logged out successfully") auto-dismiss after 5 seconds; the **×** button on any banner closes it immediately.
+- Use **Sign out** in the top-right of the navigation bar to log out. Signing in successfully always redirects to the **Dashboard**.
+
+### Roles
+
+| Role | Access |
+|---|---|
+| **Super Admin** | Everything — including Users management, deleting records, and editing Purchase Order delivery dates |
+| **Business Admin** | Everything except Users management and record deletion |
+| **Moderator** | Cannot access this app at all (`canAccessInventoryApp()` returns false) — moderators are POS-only cashiers/delivery staff |
+
+Delete actions (Companies, Products, Locations, Inventory, Purchase Orders, Stock Transfers) are only visible/permitted for Super Admins; Business Admins can do everything else, including deactivating records via the toggle switch instead of deleting them.
 
 ### Navigation
 
-Once signed in, the top navigation bar gives you access to every module:
+The top navigation bar is organized into four dropdowns, plus a Dashboard link (the "Inventory System" logo/brand also links to the Dashboard):
 
-| Menu item | What it manages |
+| Dropdown | Contains |
 |---|---|
-| Companies | The organizations that own categories, locations, and products |
-| Categories | Product categories, each belonging to a company |
-| Locations | Physical/warehouse locations, each belonging to a company |
-| Products | The product catalog |
-| Base Units | Units of measure (e.g. Kilogram/kg, Piece/pc, Liter/ltr) used by products |
-| Stock | Stock levels — how much of each product is on hand at each location |
-| Users | User accounts and which company each one belongs to |
+| **General Data** | Companies, Locations, Suppliers, Categories, Base Units, Unit Conversions |
+| **Inventory** | Products, Stock |
+| **PO & Delivery** | Purchase Orders, Delivery Tracking |
+| **Admin** | Reports, Activity Log, Users (Super Admin only) |
 
-Each module works the same way: a list page with **New**, **Edit** (pencil icon), and **Delete** (trash icon) actions. Your own name in the top-right of the navbar links to **My Profile**, where you can update your name/email or change your password.
+Your name/avatar in the top-right opens **My Profile**; the gear icon opens **Settings** — language, light/dark theme, **Contact Us**, **FAQ**, and **User Guide** (an in-app walkthrough and Q&A, cross-linked to each other via modals).
+
+### Dashboard
+
+The landing page after login (`/dashboard`). Shows:
+
+- Five stat tiles: Active Products, Total Stock Units, Low Stock count, Pending Purchase Orders, Pending Stock Transfers.
+- **Needs Attention** — up to 8 products at/below their reorder point, with product, location, current qty, and reorder point.
+- **Pending Deliveries** — up to 6 pending Purchase Orders/Stock Transfers (same feed as Delivery Tracking).
+- **Recent Activity** — the last 8 entries from the system-wide activity log.
 
 ### Companies
 
-- **List**: `/companies` — shows all companies.
-- **Create**: click **New Company**, enter a name, save.
-- **Edit / Delete**: from the list, use the pencil/trash icons.
-
-Companies are the top-level entity — categories, locations, and products are all tied to one.
-
-### Categories
-
-- **List**: `/categories`.
-- **Create**: click **New Category**, choose the owning **Company**, enter a name.
-- Used to classify products (e.g. "Electronics", "Beverages").
+- **List**: `/companies`.
+- **Create/Edit**: name only.
+- **Active/Inactive toggle**: deactivating a company hides it from POS-facing pickers without deleting its history.
+- **Delete**: Super Admin only; blocked with a clear message if the company still has products/locations/etc. tied to it.
 
 ### Locations
 
-- **List**: `/locations` — has a search box that filters instantly (no page reload) as you type, matching against company name, location name, or description.
-- **Create**: choose the owning **Company**, enter a name and an optional description.
-- Represents a place stock can be kept (a warehouse, a shelf, a store branch).
+- **List**: `/locations` — has a live-filtering search box (company, name, description) and shows each location's **type**.
+- **Create/Edit**: choose the owning **Company**, a **Type** (**Warehouse** or **Store**), a name, and an optional description.
+  - **Warehouses** are the only locations Purchase Orders can be received into, and the only valid *source* for Stock Transfers to a store.
+  - **Stores** are the only locations the companion POS app lets a cashier sell from or a Business Admin assign a cashier to.
+- **Active/Inactive toggle** and **Delete** (Super Admin only, blocked if stock/sales exist).
+
+### Suppliers
+
+- **List**: `/suppliers` — name, contact person(s), phone(s), address, email.
+- **Create/Edit**:
+  - **Supplier Name**, **Address** (required).
+  - **Contact Person** (required) and an optional **Additional Contact Person** — each has a name-prefix dropdown (Mr./Ms./Mrs./Dr./Engr./Atty.) stored combined with the name (e.g. "Mr. Juan Dela Cruz").
+  - **Phone** (required) and an optional **Secondary Phone** — each pairs a country-code dropdown (Philippines +63 first) with a **9-digit local number** (digits only, enforced live in the input and again server-side via `regex:/^[0-9]{9}$/`).
+  - **Email** (optional).
+- **Delete**: warns explicitly ("There are products supplied by this supplier...") if any active product currently lists this supplier before confirming; deleting removes the supplier→product links (products themselves are untouched) since suppliers cascade-delete only their pivot rows, not products.
 
 ### Products
 
-- **List**: `/products` — shows every product with its company, category, and base unit.
-- **Create** (`/products/create`):
-  1. Choose a **Company**.
-  2. Choose a **Category**.
-  3. Enter **Product Name**, optional **Description**, and a unique **SKU** (code).
-  4. Enter the **Unit Value / Qty** (defaults to 1).
-  5. Click **Browse** next to **Base Unit** to open a picker listing all Base Units, then click **Select** on the one you want.
-  6. Enter a **Selling Price** and optional **Cost** — these drive the price shown at checkout in the companion POS app; leave Selling Price at 0 for products not sold through the register.
-  7. Save.
-- **Edit**: same form, pre-filled with the product's current values.
-- **Delete**: from the list page. Blocked with a clear message (not a crash) if the product still has stock records or sales tied to it — see [Delete safety](#delete-safety) below.
-- The list's **Description** column truncates long text and shows the full description in a hover tooltip (works with keyboard focus too, for accessibility).
-- The **Base Unit** column shows the product's packaging (e.g. "20.00 Box") plus, if a unit conversion is defined for that base unit, the converted total for this specific product — `unit_value × conversion factor`, e.g. 20 Boxes at "1 Box = 12 Piece" shows "= 240 Piece", not just the flat 12.
+- **List**: `/products` — SKU, Name, Description, Company, **Supplier** (first linked supplier + "+N" if more, hover for the full list), Category, Base Unit (with any unit-conversion total shown underneath), Reorder Point, Status, and actions.
+- **Create** (`/products/create`) / **Edit**:
+  1. Choose **Company** and **Category**.
+  2. Enter **Product Name**, optional **Description**, a unique **SKU**.
+  3. Enter **Unit Value / Qty** and pick a **Base Unit**.
+  4. Pick **at most one Applicable Unit Conversion** (radio buttons, including an explicit "None") — a product can only ever have one conversion active, even though the same base unit may have several conversions defined globally.
+  5. Check off any **Suppliers** this product can be ordered from (multi-select) — this is what the Purchase Order form filters against.
+  6. Enter **Reorder Point**, **Selling Price**, and optional **Cost** (cost pre-fills a Purchase Order line's Unit Cost).
+  7. Optionally upload a product **Photo**.
+  8. Save.
+- **Active/Inactive toggle** (all roles) and **History** (per-product activity log).
+- **Delete** (Super Admin only) is guarded on two levels:
+  - Blocked outright, with a clear message, if the product still has **stock on hand** (`inventories.quantity > 0`) — its stock rows would otherwise cascade-delete silently.
+  - The delete button shows a stronger warning ("...linked to active purchase orders or inventory records...") if the product has stock, a pending Purchase Order line, or a pending Stock Transfer line; a plain confirmation otherwise. Pending PO/Transfer line items are also protected at the database level (no cascade), so an attempt against those surfaces a friendly error rather than a crash.
 
-### Base Units
+### Categories
 
-- **List**: `/base-units` — shows every unit of measure with its name and short code.
-- **Create**: click **New Base Unit**, enter a **Unit Name** (e.g. "Kilogram") and an optional **Code** (e.g. "kg").
-- **Edit**: update the name/code.
-- **Delete**: if a unit is currently assigned to one or more products, deletion is blocked with a message explaining why — reassign or delete those products first.
+- **List**: `/categories`. **Create**: choose the owning **Company**, enter a name.
 
-### Stock
+### Base Units & Unit Conversions
 
-- **List**: `/inventory` (nav label "Stock") — shows every stock record with its product, location, and quantity.
-- **Create**: click **Add Inventory**, choose a **Product**, a **Location**, and enter the **Quantity** on hand.
-- **Edit**: update the quantity, or reassign the product/location, from the list's **Edit** action.
-- Each product can only have **one** stock record per location — trying to create a second one for the same product+location pair shows a validation message telling you to edit the existing record instead.
-- The companion POS app has its own equivalent Stock page (scoped to whichever location a cashier is currently selling from) — both write to the same `inventories` table, so a change made in either app is immediately visible in the other.
-- **Transfer** (the transfer icon on a stock row): moves quantity of that product from one location to another, both within the same company.
-  - **From Location** is a dropdown of every location (in the same company) that currently has stock of this product — not just the row you clicked — showing how many units are available at each. Switching it live-updates the "available" badge, caps the quantity input at that location's stock, and disables that same location in the **Transfer To** list so you can't transfer somewhere to itself.
-  - **Transfer To** lists every location in the company; if the destination doesn't have a stock record for this product yet, one is created automatically.
-  - The whole move happens in a single database transaction — decrementing the source and incrementing (or creating) the destination together.
+- **Base Units** (`/base-units`): unit of measure name + short code (e.g. "Kilogram" / "kg"). **Delete** is blocked if any active product currently uses it.
+- **Unit Conversions** (`/unit-conversions`): defines "1 `<from unit>` = `<factor>` `<to unit>`" (e.g. "1 Box = 12 Piece"); more than one conversion can exist for the same base unit. **Delete** is blocked if any active product currently has this conversion selected.
 
-### Users
+### Stock (Inventory)
 
-- **List**: `/users` — every account and which company (if any) it belongs to.
-- **Create/Edit**: name, email, password (leave blank on edit to keep the current password), and an optional **Company** assignment.
-- **Delete**: blocked with a message if the user still has sales or other records tied to their account; you also can't delete the account you're currently signed in as.
-- This is the only place in the app that actually sets `users.company_id` — the companion POS app reads that field to know which company a cashier belongs to, but registering directly through `/register` still leaves it `null` (see Known Issues).
+- **List**: `/inventory` — product, location (with type shown), quantity.
+- **Create/Edit**: choose a Product and Location, enter Quantity. Each product can only have one stock record per location.
+- **Transfer** (instant, same-company): pick a source location that currently has stock of this product (live "available" badge, quantity capped, source excluded from the destination list), and a destination — creates the destination's stock record automatically if needed. Runs in a single DB transaction.
+- Shared with the companion POS app's own Stock page — a change in either app is immediately visible in the other.
+
+### Purchase Orders
+
+- **List**: `/purchase-orders`.
+- **Create**: pick **Supplier** first (required) — filters the Company and the Product list to only what that supplier provides — then **Company**, then **Deliver To (Warehouse)** (warehouse-type locations only). Set **Order Date** and a required **Expected Delivery Date**, optional Notes, then add one or more product rows (Quantity, Unit Cost — pre-filled from the product's Cost but editable). If a chosen supplier has no linked products for that company, the product dropdown says so explicitly instead of appearing empty/broken.
+- **Show** (`/purchase-orders/{id}`): a compact metadata bar (Status, Supplier, Company, Warehouse, dates, Created/Received By) with a collapsible **Supplier Details** drawer, a full-width **Order Items** table, and a full-width **Stock Activity** log of what was received.
+- **Mark as Received**: updates stock at the destination warehouse immediately, in a transaction; logs a `purchase_received` activity entry.
+- **Cancel**: marks the order cancelled without touching stock.
+- **Delete**: Super Admin only.
+
+### Stock Transfers
+
+Distinguishes **instant** (store↔store, applied immediately) from **deferred/tracked** (warehouse→store, goes through a pending → received/cancelled lifecycle, same as Purchase Orders) transfers. Tracked transfers appear in Delivery Tracking and the Dashboard's Pending Deliveries alongside Purchase Orders.
+
+### Delivery Tracking
+
+- **List**: `/deliveries` — a unified feed of pending/received/cancelled Purchase Orders and tracked Stock Transfers (via the shared `DeliveryFeed` support class), with each row's type, status, warehouse/location type, and dates.
+- **Export to Excel**: downloads the current list as CSV.
+- **Edit dates** (Super Admin only): adjust a Purchase Order's Order/Expected Delivery dates from its show page.
+
+### Users (Super Admin only)
+
+- **List**: `/users`.
+- **Create/Edit**: Full Name, Email, optional Alternative Email (**required** if you're also setting a password, so reset codes have somewhere to go), Role, one or more **Companies**, and (for Moderators) a single **POS Location**.
+- **Active/Inactive toggle** and **Delete** — you can't deactivate/delete/demote-from-Super-Admin your own currently-signed-in account.
+
+### Profile
+
+`/profile` — every signed-in user can update their own name, email, alternative email, avatar photo, and password (old password fields plus the same "alternative email required with a new password" rule as Users). Avatar and password fields have their own full-width rows; identity and role/company fields sit side-by-side above them.
+
+### Reports & Activity Log
+
+- **Reports** (`/reports`): stock/sales summaries.
+- **Activity Log** (`/history`): every create/update/delete/transfer/purchase-received/transfer-dispatched/received/cancelled event system-wide, with **Export to Excel**.
+- Every module with a History link (Products, Inventory, Purchase Orders, Stock Transfers) shows the same activity entries scoped to that one record.
 
 ---
 
@@ -105,8 +154,8 @@ Companies are the top-level entity — categories, locations, and products are a
 
 - **Backend**: Laravel 13, PHP 8.3+
 - **Database**: Microsoft SQL Server (`sqlsrv` driver) for local development; tests run against in-memory SQLite (see `phpunit.xml`)
-- **Frontend**: Server-rendered Blade views styled with **Bootstrap 5** (loaded via CDN in `resources/views/layouts/app.blade.php`) and Bootstrap Icons. Vite/Tailwind are scaffolded in `package.json` but are not the source of the actual UI styling.
-- **Auth**: Laravel's built-in session-based guard (`AuthController`, `Auth::attempt`)
+- **Frontend**: Server-rendered Blade views styled with **Bootstrap 5** (CDN, in `resources/views/layouts/app.blade.php`) and Bootstrap Icons. Vite/Tailwind are scaffolded in `package.json` but are not the source of the actual UI styling.
+- **Auth**: Laravel's built-in session-based guard (`AuthController`, `Auth::attempt`), plus a custom `role:` route middleware (`app/Http/Middleware/EnsureRole.php`) for Super-Admin-only routes.
 
 ### Requirements
 
@@ -164,14 +213,7 @@ composer run test
 php artisan test
 ```
 
-Tests always run against an in-memory SQLite database (forced by `phpunit.xml`), independent of whatever `.env` is configured for local dev — no separate test database setup is needed.
-
-To run a single test:
-
-```bash
-php artisan test tests/Feature/ExampleTest.php
-php artisan test --filter=test_method_name
-```
+Tests always run against an in-memory SQLite database (forced by `phpunit.xml`), independent of whatever `.env` is configured for local dev.
 
 ### Code style
 
@@ -181,40 +223,46 @@ vendor/bin/pint
 
 ### Architecture
 
-**Routing & auth** (`routes/web.php`): a `guest` middleware group holds `/login` and `/register`; everything else sits behind an `auth` middleware group and is registered as a standard `Route::resource(...)` per module (`companies`, `products`, `categories` → `ProductCategoryController`, `locations`, `base-units` → `UnitOfMeasureController`, `unit-conversions`, `users`), plus two extra non-resource routes for the Transfer flow (`GET`/`POST /inventory/{inventory}/transfer`) and two for the self-service profile (`GET`/`PUT /profile`). Root `/` redirects to `products.index`.
+**Routing & auth** (`routes/web.php`): a `guest` middleware group holds `/login`, `/register`, `/forgot-password`, `/reset-password`; everything else sits behind `auth`. Most modules are standard `Route::resource(...)` calls; delete routes and the Users resource are wrapped in a `role:super_admin` group. Root `/` redirects to `dashboard.index`.
 
-**Data model:**
+**Roles** (`app/Models/User.php`): `role` is one of `super_admin` / `business_admin` / `moderator` (constants `User::ROLE_*`), checked via `isSuperAdmin()`/`isBusinessAdmin()`/`isModerator()`/`canAccessInventoryApp()`.
 
-| Model | Table | Primary key | Notes |
-|---|---|---|---|
-| `Company` | `companies` | `company_id` | Non-default PK; has an accessor working around SQL Server column-casing differences |
-| `ProductCategory` | `product_categories` | `id` | The live category model — used by `ProductCategoryController` and `ProductController` |
-| `Location` | `locations` | `id` | Belongs to a `Company` |
-| `Product` | `products` | `id` | Belongs to `Company`, `ProductCategory`, and `UnitOfMeasure` (via `base_unit_id`). Also carries `selling_price`/`cost` — added by the companion POS app's migrations, editable from either app |
-| `UnitOfMeasure` | `base_units` | `id` | Despite the class name, its `$table` is overridden to `base_units` — this is the model backing the "Base Units" feature |
-| `BaseUnit` | `base_units` | `id` | A second model pointing at the same table as `UnitOfMeasure`; only used to populate the product form's unit picker |
-| `Inventory` | `inventories` | `id` | Product + Location + quantity; unique per (product, location) pair. Has two quantity columns, see Known Issues |
-| `User` | `users` | `id` | Standard Laravel auth user; `company_id` (nullable) + a `company()` relation, set via the Users module — read by the companion POS app to know which company a cashier belongs to |
+**Data model — key tables added since the original schema:**
+
+| Model | Table | Notes |
+|---|---|---|
+| `Supplier` | `suppliers` | `belongsToMany` `Product` via `product_supplier` (cascade-deletes the pivot, not products) |
+| `PurchaseOrder` / `PurchaseOrderItem` | `purchase_orders` / `purchase_order_items` | Status `pending`/`received`/`cancelled`; items have a plain FK to `products` (no cascade — blocks product deletion while referenced) |
+| `StockTransfer` / `StockTransferItem` | `stock_transfers` / `stock_transfer_items` | Same status lifecycle as Purchase Orders for warehouse→store transfers; store↔store transfers apply instantly with no tracked row |
+| `UnitConversion` | `unit_conversions` | `hasMany` `Product` via `products.unit_conversion_id` (single nullable FK — **not** a pivot; see Known Issues below for why) |
+| `Location.type` | `locations.type` | `warehouse` or `store` (`Location::TYPE_WAREHOUSE`/`TYPE_STORE`); `isWarehouse()`/`isStore()` helpers gate PO-receiving and POS location pickers |
+| `Product.unit_conversion_id` | `products` | Nullable FK — each product selects at most one conversion, even if several exist for its base unit |
 
 ```mermaid
 erDiagram
-    COMPANIES ||--o{ PRODUCT_CATEGORIES : has
     COMPANIES ||--o{ LOCATIONS : has
     COMPANIES ||--o{ PRODUCTS : has
-    PRODUCT_CATEGORIES ||--o{ PRODUCTS : classifies
-    BASE_UNITS ||--o{ PRODUCTS : "measures (base_unit_id)"
+    SUPPLIERS }o--o{ PRODUCTS : "product_supplier"
     PRODUCTS ||--o{ INVENTORIES : "stock records"
     LOCATIONS ||--o{ INVENTORIES : "stock records"
+    SUPPLIERS ||--o{ PURCHASE_ORDERS : supplies
+    LOCATIONS ||--o{ PURCHASE_ORDERS : "delivered to (warehouse)"
+    PURCHASE_ORDERS ||--o{ PURCHASE_ORDER_ITEMS : lines
+    PRODUCTS ||--o{ PURCHASE_ORDER_ITEMS : ordered
+    LOCATIONS ||--o{ STOCK_TRANSFERS : "delivered to"
+    STOCK_TRANSFERS ||--o{ STOCK_TRANSFER_ITEMS : lines
+    PRODUCTS ||--o{ STOCK_TRANSFER_ITEMS : moved
 ```
 
 **SQL Server quirks to be aware of:**
 
 - Several models hardcode `company_id` as both the local and foreign key in relationships, since `companies.company_id` isn't the Eloquent-default `id`.
-- A cascade delete was deliberately removed from `inventories.location_id` (see migration `2026_08_24_000007_create_inventories_table`) to avoid SQL Server's multiple-cascade-path error.
+- Cascade deletes were deliberately removed wherever two columns on the same table would reference the same other table twice (SQL Server's "multiple cascade paths" error) — e.g. `purchase_orders.created_by`/`received_by`, `stock_transfers.created_by`/`received_by` both reference `users` with no cascade.
+- An inline closure with an array literal as the sole argument to `@json(...)` in a Blade view confuses Blade's bracket-balance pre-check (`Unclosed '[' does not match ')'`, pointing at the *compiled* file). Always pre-build the plain array in the controller (see `ProductController::conversionOptions()`, `PurchaseOrderController::create()`'s `$productOptions`/`$locationOptions`) and pass a plain variable to `@json()`.
 
 ### Delete safety
 
-`CompanyController`, `ProductController`, `LocationController`, `ProductCategoryController`, `UserController`, and `UnitOfMeasureController`'s `destroy()` methods all catch `QueryException` around the delete: if SQL Server refuses it with a `23000`/"REFERENCE constraint" error (the row is still referenced elsewhere — a company with products, a product with stock/sales, a unit still assigned to products, etc.), the user gets a plain-language flash error instead of the framework's 500 error page. If you add a new `destroy()` method for a model that anything else can reference, copy this pattern rather than calling `->delete()` directly:
+Every `destroy()` that could be blocked by real references follows this pattern — catch the DB's rejection and turn it into a plain-language flash error instead of a 500 page:
 
 ```php
 try {
@@ -228,25 +276,29 @@ try {
 }
 ```
 
-`InventoryController::destroy()` deliberately does **not** have this guard — nothing in the current schema holds a foreign key against `inventories.id`, so it can't actually fail this way.
+Some deletions are additionally pre-checked *before* attempting the delete, so the user gets a specific reason without relying on the DB error message at all — `UnitOfMeasureController::destroy()` and `UnitConversionController::destroy()` check for active products first; `ProductController::destroy()` checks for on-hand stock first (since that FK cascades and wouldn't otherwise raise an error). The Products and Suppliers list pages also pass a `hasActiveDependencies`/`active_products_count` flag to the delete button's confirmation JS so the warning text itself changes before the request is even sent.
+
+`InventoryController::destroy()` deliberately has no such guard — nothing in the schema holds a foreign key against `inventories.id`.
+
+### Flash banners
+
+Success/status alerts across the authenticated layout (`resources/views/layouts/app.blade.php`) carry `data-auto-dismiss="5000"` and are closed via `bootstrap.Alert.getOrCreateInstance(el).close()` after that delay; the standalone auth pages (login/forgot-password/reset-password, which don't load Bootstrap's JS bundle) use a small hand-rolled fade+remove script instead, with the same 5s timer and immediate manual dismiss via the **×** button (which cancels the timer). Error/warning alerts are *not* auto-dismissed. If you add a new success/status banner anywhere, follow whichever of these two patterns matches the page it's on.
 
 ### Known Issues
 
-- The `inventories` table has two overlapping quantity columns: an original `quantity_on_hand` (from the initial migration) and a later `quantity` (added in `2026_08_25_050010_add_quantity_to_inventories_table`). This app's own `InventoryController` only reads/writes `quantity`. The companion POS app treats whichever column is larger as the true on-hand count (`Inventory::effectiveStock()`) and writes both back in sync on every sale, refund, or stock edit — so in practice both columns stay equal as long as stock changes go through either app's UI, but a record created only through this app's older `db:seed`/tinker paths could still leave `quantity_on_hand` at its default `0` until the next POS-side write touches it.
-- Two separate migrations created similarly-named tables early in the project's history — `base_units` and an unrelated, unused `unit_of_measures` table, plus a separate empty `categories` table distinct from `product_categories`. These are historical leftovers; the live features use `base_units` and `product_categories` respectively. See `CLAUDE.md` for the full list of naming quirks to be careful of when extending this codebase.
-- There is no company-scoping anywhere in this app — every signed-in user sees every company's data (companies, locations, products, stock), regardless of which company their own account is assigned to. The Users module now lets you *set* `users.company_id` (previously nothing did), and the companion POS app enforces scoping on its own side using that field, but this app's own controllers still don't filter any query by it.
+- `UnitConversion` used to be a `belongsToMany` via a `product_unit_conversions` pivot (multi-select per product); this was deliberately reversed to a single nullable `products.unit_conversion_id` FK (migration `2026_09_08_080000_replace_product_unit_conversions_pivot_with_single_fk`) so a product can only ever have one applicable conversion. If you're reading old code/docs referencing `product_unit_conversions`, it no longer exists.
+- Two separate migrations created similarly-named tables early in the project's history — `base_units` and an unrelated, unused `unit_of_measures` table, plus a separate empty `categories` table distinct from `product_categories`. These are historical leftovers; live features use `base_units` and `product_categories`. See `CLAUDE.md` for the full list of naming quirks.
+- There is no company-scoping in this app's own queries — every signed-in user with access sees every company's data, regardless of which companies their account is assigned to. The companion POS app enforces its own scoping via `users.company_id`/`company_user`, but this app's controllers don't filter by it.
+- The `inventories` table has two overlapping quantity columns (`quantity_on_hand` and `quantity`, the latter added later); this app's own code only reads/writes `quantity`. The companion POS app treats whichever is larger as the true on-hand count and writes both back in sync — see its docs.
 
 ### Companion POS application
 
-A separate Laravel 13 app (in its own `POS/` project folder) implements a point-of-sale register on top of this same database — same SQL Server connection, same `companies`/`locations`/`products`/`inventories`/`users` tables, no API or sync step between them. It added, via its own migrations:
+A separate Laravel 13 app (`POS/POS/`) implements a point-of-sale register on the same database — same SQL Server connection, same `companies`/`locations`/`products`/`inventories`/`users`/`suppliers` tables, no API or sync step. It owns `sales`, `sale_items`, `refunds`, `refund_items` exclusively.
 
-- `products.selling_price` and `products.cost` (see the Products section above and the Data model table).
-- Four new tables it owns exclusively: `sales`, `sale_items`, `refunds`, `refund_items` — this app has no UI for them and doesn't need one.
-
-Because the two apps share one `migrations` table (it's in the shared database), each app's default Laravel migrations are only ever applied once — whichever app runs `php artisan migrate` first "wins", and the other app's migrate skips those same-named files as already run.
+Because the two apps share one `migrations` table, each app's default Laravel migrations are only ever applied once — whichever app runs `php artisan migrate` first "wins".
 
 Practical implications for anyone working on this codebase:
 
-- **Don't drop or rename `products.selling_price`/`cost`, or the `inventories.quantity`/`quantity_on_hand` columns** without checking the POS app first — it depends on all four.
-- A user account is shared: signing up or logging in here uses the exact same `users` row as the POS app, so a password reset or role change here affects both.
-- If you add a migration that alters `products`, `inventories`, `locations`, `companies`, or `users`, mention it to whoever maintains the POS app (or check its `DOCUMENTATION.md`) — those tables are load-bearing for checkout, stock deduction, and refunds over there.
+- **Don't drop or rename `products.selling_price`/`cost`, `inventories.quantity`/`quantity_on_hand`, `locations.type`, or any `suppliers`/`purchase_order*`/`stock_transfer*` column** without checking whether POS reads it — its Stock and Team pages both rely on `locations.type` (stores only) and the shared `users`/`companies` structure.
+- A user account is shared: signing up, logging in, resetting a password, or changing a role here affects both apps identically, since it's the exact same `users` row.
+- If you add a migration that alters `products`, `inventories`, `locations`, `companies`, `users`, or `suppliers`, mention it to whoever maintains the POS app (or check its `DOCUMENTATION.md`) — those tables are load-bearing for checkout, stock deduction, refunds, and team/location assignment over there.

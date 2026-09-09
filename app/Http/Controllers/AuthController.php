@@ -24,8 +24,24 @@ class AuthController extends Controller
         ]);
 
         if (Auth::attempt($credentials, $request->boolean('remember'))) {
+            if (! Auth::user()->isActive()) {
+                Auth::logout();
+
+                return back()->withErrors([
+                    'email' => 'This account has been deactivated. Contact an administrator.',
+                ])->onlyInput('email');
+            }
+
+            if (Auth::user()->isModerator()) {
+                Auth::logout();
+
+                return back()->withErrors([
+                    'email' => 'This account only has access to the POS system.',
+                ])->onlyInput('email');
+            }
+
             $request->session()->regenerate();
-            return redirect()->intended(route('companies.index'))
+            return redirect()->intended(route('dashboard.index'))
                 ->with('success', 'Welcome back!');
         }
 
@@ -44,21 +60,22 @@ class AuthController extends Controller
     public function register(Request $request)
     {
         $validated = $request->validate([
-            'name'     => ['required', 'string', 'max:255'],
-            'email'    => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
-            'password' => ['required', 'string', 'min:8', 'confirmed'],
+            'name'               => ['required', 'string', 'max:255'],
+            'email'              => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
+            'alternative_email'  => ['nullable', 'string', 'email', 'max:255', 'different:email'],
+            'password'           => ['required', 'string', 'min:8', 'confirmed'],
         ]);
 
         $user = User::create([
-            'name'     => $validated['name'],
-            'email'    => $validated['email'],
-            'password' => Hash::make($validated['password']),
+            'name'              => $validated['name'],
+            'email'             => $validated['email'],
+            'alternative_email' => $validated['alternative_email'] ?? null,
+            'password'          => Hash::make($validated['password']),
+            'role'              => User::ROLE_MODERATOR,
         ]);
 
-        Auth::login($user);
-
-        return redirect()->route('companies.index')
-            ->with('success', 'Account created successfully!');
+        return redirect()->route('login')
+            ->with('success', 'Account created successfully! An administrator must grant you access before you can sign in here — you can already sign in to POS.');
     }
 
     // Process Logout Request

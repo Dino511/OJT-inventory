@@ -37,10 +37,23 @@
                 </div>
 
                 <!-- Description / Landmark -->
-                <div class="mb-4">
+                <div class="mb-3">
                     <label for="description" class="form-label fw-semibold small">Description / Landmark</label>
                     <textarea name="description" id="description" rows="3" class="form-control @error('description') is-invalid @enderror" placeholder="e.g. Near the main loading dock, 2nd floor">{{ old('description', $location->description) }}</textarea>
                     @error('description')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
+                </div>
+
+                <!-- Type -->
+                <div class="mb-4">
+                    <label for="type" class="form-label fw-semibold small">Location Type</label>
+                    <select name="type" id="type" class="form-select @error('type') is-invalid @enderror" required>
+                        <option value="store" {{ old('type', $location->type) == 'store' ? 'selected' : '' }}>Store</option>
+                        <option value="warehouse" {{ old('type', $location->type) == 'warehouse' ? 'selected' : '' }}>Warehouse</option>
+                    </select>
+                    <div class="form-text small">Only Warehouse locations can be selected as the delivery destination on a Purchase Order.</div>
+                    @error('type')
                         <div class="invalid-feedback">{{ $message }}</div>
                     @enderror
                 </div>

@@ -1,0 +1,138 @@
+@extends('layouts.app')
+
+@section('title', 'Suppliers')
+
+@section('content')
+    <!-- Header & Top Actions -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h3 class="fw-bold mb-1">Suppliers</h3>
+            <p class="text-secondary small mb-0">Manage the suppliers you order stock from.</p>
+        </div>
+        <a href="{{ route('suppliers.create') }}" class="btn btn-github btn-sm px-3">
+            <i class="bi bi-plus-lg me-1"></i> New Supplier
+        </a>
+    </div>
+
+    <!-- Main CRUD Card Container -->
+    <div class="card shadow-sm">
+        <!-- Filter Bar -->
+        <div class="card-header p-3">
+            <div class="row g-2 align-items-center">
+                <div class="col-md-4">
+                    <div class="input-group input-group-sm">
+                        <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-search"></i></span>
+                        <input type="text" id="tableSearch" class="form-control border-start-0" placeholder="Filter suppliers...">
+                    </div>
+                </div>
+                <div class="col-md-8 text-end">
+                    <span class="badge bg-light text-dark border">
+                        <i class="bi bi-truck me-1"></i> {{ $suppliers->count() }} Total
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Data Table -->
+        <div class="table-responsive">
+            <table class="table table-hover align-middle" id="suppliersTable">
+                <thead>
+                    <tr>
+                        <th scope="col" style="width: 80px;">ID</th>
+                        <th scope="col">SUPPLIER NAME</th>
+                        <th scope="col">CONTACT PERSON</th>
+                        <th scope="col">PHONE</th>
+                        <th scope="col">LOCATION</th>
+                        <th scope="col">EMAIL</th>
+                        <th scope="col" class="text-end" style="width: 160px;">ACTIONS</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse($suppliers as $supplier)
+                        <tr>
+                            <td>
+                                <span class="badge bg-light text-secondary border font-monospace">#{{ $supplier->id }}</span>
+                            </td>
+                            <td>
+                                <div class="fw-semibold text-dark">{{ $supplier->name }}</div>
+                            </td>
+                            <td class="text-secondary small">
+                                {{ $supplier->contact_person }}
+                                @if($supplier->secondary_contact_person)
+                                    <div class="text-muted">{{ $supplier->secondary_contact_person }}</div>
+                                @endif
+                            </td>
+                            <td class="text-secondary small">
+                                {{ $supplier->phone ?? '—' }}
+                                @if($supplier->secondary_phone)
+                                    <div class="text-muted">{{ $supplier->secondary_phone }}</div>
+                                @endif
+                            </td>
+                            <td class="text-secondary small" style="max-width: 220px;">
+                                @if($supplier->address)
+                                    <span class="text-truncate d-inline-block" style="max-width: 220px; vertical-align: bottom;" title="{{ $supplier->address }}">
+                                        {{ $supplier->address }}
+                                    </span>
+                                @else
+                                    —
+                                @endif
+                            </td>
+                            <td class="text-secondary small">{{ $supplier->email ?? '—' }}</td>
+                            <td class="text-end">
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <a href="{{ route('suppliers.edit', $supplier->id) }}" class="btn btn-outline-github" title="Edit">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    <form action="{{ route('suppliers.destroy', $supplier->id) }}" method="POST" class="d-inline supplier-delete-form" data-active-products="{{ $supplier->active_products_count }}">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="btn btn-outline-danger" title="Delete">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="7" class="text-center py-5 text-muted">
+                                <i class="bi bi-truck fs-2 d-block mb-2 text-secondary"></i>
+                                No suppliers found. Click <strong>New Supplier</strong> to get started.
+                            </td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+    </div>
+@endsection
+
+@push('scripts')
+    <script>
+        document.getElementById('tableSearch')?.addEventListener('keyup', function() {
+            let filter = this.value.toLowerCase();
+            let rows = document.querySelectorAll('#suppliersTable tbody tr');
+            rows.forEach(row => {
+                let text = row.textContent.toLowerCase();
+                row.style.display = text.includes(filter) ? '' : 'none';
+            });
+        });
+
+        // Delete confirmation: warn more strongly when active products are
+        // still linked to this supplier, since deleting it removes that link.
+        document.querySelectorAll('.supplier-delete-form').forEach(function (form) {
+            form.addEventListener('submit', function (e) {
+                e.preventDefault();
+
+                const hasActiveProducts = parseInt(form.dataset.activeProducts, 10) > 0;
+                const message = hasActiveProducts
+                    ? 'Warning: There are products supplied by this supplier. Are you sure you want to delete this supplier?'
+                    : 'Are you sure you want to delete this supplier?';
+
+                if (confirm(message)) {
+                    form.submit();
+                }
+            });
+        });
+    </script>
+@endpush

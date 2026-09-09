@@ -45,6 +45,20 @@
                         </div>
 
                         <div class="mb-3">
+                            <label for="role" class="form-label small fw-semibold">Role</label>
+                            <select id="role" name="role" class="form-select form-select-sm @error('role') is-invalid @enderror" required>
+                                <option value="" disabled {{ old('role') ? '' : 'selected' }}>Select a role</option>
+                                <option value="super_admin" {{ old('role') === 'super_admin' ? 'selected' : '' }}>Super Admin</option>
+                                <option value="business_admin" {{ old('role') === 'business_admin' ? 'selected' : '' }}>Business Admin</option>
+                                <option value="moderator" {{ old('role') === 'moderator' ? 'selected' : '' }}>Moderator</option>
+                            </select>
+                            <div class="form-text small">Super Admin: full access to both systems. Business Admin: everything except Users management. Moderator: POS only.</div>
+                            @error('role')
+                                <div class="invalid-feedback d-block small">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <div class="mb-3">
                             <label class="form-label small fw-semibold">Companies</label>
                             <div class="border rounded p-2" style="max-height: 160px; overflow-y: auto;">
                                 @forelse($companies as $company)
@@ -59,6 +73,29 @@
                             </div>
                             <div class="form-text small">Check every company this user should be able to sell for. Leave all unchecked for no company access yet.</div>
                             @error('company_ids')
+                                <div class="invalid-feedback d-block small">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <div class="mb-3" id="locationField">
+                            <label for="location_id" class="form-label small fw-semibold">POS Location</label>
+                            <select id="location_id" name="location_id" class="form-select form-select-sm @error('location_id') is-invalid @enderror">
+                                <option value="">No location assigned yet</option>
+                                @foreach($companies as $company)
+                                    @php $companyLocations = $locations->where('company_id', $company->company_id); @endphp
+                                    @if($companyLocations->isNotEmpty())
+                                        <optgroup label="{{ $company->name }}">
+                                            @foreach($companyLocations as $location)
+                                                <option value="{{ $location->id }}" data-company="{{ $location->company_id }}" {{ old('location_id') == $location->id ? 'selected' : '' }}>
+                                                    {{ $location->name }}
+                                                </option>
+                                            @endforeach
+                                        </optgroup>
+                                    @endif
+                                @endforeach
+                            </select>
+                            <div class="form-text small">Locks a Moderator to selling from this location in POS. Must be one of the checked companies above.</div>
+                            @error('location_id')
                                 <div class="invalid-feedback d-block small">{{ $message }}</div>
                             @enderror
                         </div>
@@ -93,3 +130,17 @@
         </div>
     </div>
 @endsection
+
+@push('scripts')
+    <script>
+        const roleSelect = document.getElementById('role');
+        const locationField = document.getElementById('locationField');
+
+        function syncLocationField() {
+            locationField.classList.toggle('d-none', roleSelect.value !== 'moderator');
+        }
+
+        roleSelect.addEventListener('change', syncLocationField);
+        syncLocationField();
+    </script>
+@endpush

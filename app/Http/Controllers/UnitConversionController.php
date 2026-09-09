@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Models\UnitConversion;
 use App\Models\UnitOfMeasure;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
 
 class UnitConversionController extends Controller
 {
@@ -34,13 +33,11 @@ class UnitConversionController extends Controller
                 'required',
                 'exists:base_units,id',
                 'different:to_unit_id',
-                Rule::unique('unit_conversions', 'from_unit_id')->where(fn ($query) => $query->where('to_unit_id', $request->to_unit_id)),
             ],
             'to_unit_id' => 'required|exists:base_units,id',
             'factor' => 'required|numeric|gt:0',
         ], [
             'from_unit_id.different' => 'The two units must be different.',
-            'from_unit_id.unique' => 'A conversion between these two units already exists. Edit that one instead.',
         ]);
 
         UnitConversion::create($validated);
@@ -74,15 +71,11 @@ class UnitConversionController extends Controller
                 'required',
                 'exists:base_units,id',
                 'different:to_unit_id',
-                Rule::unique('unit_conversions', 'from_unit_id')
-                    ->where(fn ($query) => $query->where('to_unit_id', $request->to_unit_id))
-                    ->ignore($unit_conversion->id),
             ],
             'to_unit_id' => 'required|exists:base_units,id',
             'factor' => 'required|numeric|gt:0',
         ], [
             'from_unit_id.different' => 'The two units must be different.',
-            'from_unit_id.unique' => 'A conversion between these two units already exists. Edit that one instead.',
         ]);
 
         $unit_conversion->update($validated);
@@ -92,6 +85,17 @@ class UnitConversionController extends Controller
 
     public function destroy(UnitConversion $unit_conversion)
     {
+        // Without this check, deleting a conversion would cascade-delete
+        // the product_unit_conversions pivot rows silently — an active
+        // product that explicitly selected this conversion would lose it
+        // with no warning.
+        $isUsedByActiveProduct = $unit_conversion->products()->where('is_active', true)->exists();
+
+        if ($isUsedByActiveProduct) {
+            return redirect()->route('unit-conversions.index')
+                ->with('error', 'Cannot delete this conversion because it is currently in use by active products.');
+        }
+
         $unit_conversion->delete();
 
         return redirect()->route('unit-conversions.index')->with('success', 'Unit conversion deleted successfully.');

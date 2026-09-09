@@ -7,10 +7,13 @@ use App\Models\InventoryActivityLog;
 use App\Models\Product;
 use App\Models\ProductActivityLog;
 use App\Models\Location;
+use App\Models\StockTransfer;
+use App\Models\StockTransferItem;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class InventoryController extends Controller
 {
@@ -49,7 +52,9 @@ class InventoryController extends Controller
 
     public function create()
     {
-        $products = Product::orderBy('name')->get();
+        // Inactive products can't start new stock records — reactivate them
+        // from the Products page first if that was a mistake.
+        $products = Product::with('baseUnit')->where('is_active', true)->orderBy('name')->get();
         $locations = Location::orderBy('name')->get();
 
         return view('inventory.create', compact('products', 'locations'));
@@ -76,7 +81,13 @@ class InventoryController extends Controller
 
     public function edit(Inventory $inventory)
     {
-        $products = Product::orderBy('name')->get();
+        // Active products, plus this record's current product even if it's
+        // since been deactivated — so editing doesn't silently drop it from
+        // the list out from under the record being edited.
+        $products = Product::with('baseUnit')
+            ->where(fn ($query) => $query->where('is_active', true)->orWhere('id', $inventory->product_id))
+            ->orderBy('name')
+            ->get();
         $locations = Location::orderBy('name')->get();
 
         return view('inventory.edit', compact('inventory', 'products', 'locations'));
@@ -125,7 +136,24 @@ class InventoryController extends Controller
 
         $locations = Location::where('company_id', $companyId)->orderBy('name')->get();
 
-        return view('inventory.transfer', compact('inventory', 'sourceOptions', 'locations'));
+        // Every active product in this company, and where each one currently
+        // has stock — powers the "Add another product" rows below, where
+        // picking a product needs to populate its own From Location choices.
+        $products = Product::where('company_id', $companyId)->where('is_active', true)->orderBy('name')->get();
+
+        $stockByProduct = Inventory::where('quantity', '>', 0)
+            ->whereHas('location', fn ($query) => $query->where('company_id', $companyId))
+            ->with('location')
+            ->get()
+            ->groupBy('product_id')
+            ->map(fn ($items) => $items->map(fn ($inv) => [
+                'location_id' => $inv->location_id,
+                'location_name' => $inv->location->name ?? 'N/A',
+                'location_type' => $inv->location->type ?? 'store',
+                'quantity' => $inv->quantity,
+            ])->values());
+
+        return view('inventory.transfer', compact('inventory', 'sourceOptions', 'locations', 'products', 'stockByProduct'));
     }
 
     public function transfer(Request $request, Inventory $inventory)
@@ -133,78 +161,164 @@ class InventoryController extends Controller
         $companyId = $inventory->product->company_id;
 
         $validated = $request->validate([
-            'from_location_id' => [
-                'required',
-                Rule::exists('inventories', 'location_id')->where('product_id', $inventory->product_id),
-            ],
+            'product_id' => 'required|array|min:1',
+            'product_id.*' => ['required', Rule::exists('products', 'id')->where('company_id', $companyId)],
+            'from_location_id' => 'required|array|size:' . count($request->input('product_id', [])),
+            'from_location_id.*' => 'required|exists:locations,id',
+            'quantity' => 'required|array|size:' . count($request->input('product_id', [])),
+            'quantity.*' => 'required|integer|min:1',
             'to_location_id' => [
                 'required',
-                'exists:locations,id',
-                'different:from_location_id',
+                Rule::exists('locations', 'id')->where('company_id', $companyId),
             ],
-            'quantity' => 'required|integer|min:1',
-        ], [
-            'to_location_id.different' => 'Choose a different location to transfer to.',
         ]);
 
-        $source = Inventory::where('product_id', $inventory->product_id)
-            ->where('location_id', $validated['from_location_id'])
-            ->whereHas('location', fn ($query) => $query->where('company_id', $companyId))
-            ->lockForUpdate()
-            ->firstOrFail();
+        $toLocation = Location::findOrFail($validated['to_location_id']);
 
-        if ($validated['quantity'] > $source->quantity) {
-            return back()->withInput()->withErrors([
-                'quantity' => "Only {$source->quantity} units available at the selected location.",
-            ]);
+        $lines = collect($validated['product_id'])->map(fn ($productId, $i) => [
+            'product_id' => (int) $productId,
+            'from_location_id' => (int) $validated['from_location_id'][$i],
+            'quantity' => (int) $validated['quantity'][$i],
+        ]);
+
+        foreach ($lines as $line) {
+            if ($line['from_location_id'] === $toLocation->id) {
+                return back()->withInput()->withErrors([
+                    'to_location_id' => 'Choose a different location to transfer to.',
+                ]);
+            }
         }
 
-        $toLocation = Location::find($validated['to_location_id']);
+        // A transfer is treated as a trackable warehouse→store delivery
+        // (dispatch now, land in the store only once received) only when
+        // every line's source is a warehouse and the destination is a
+        // store. Any other combination — including a mixed submission —
+        // keeps today's instant transfer behavior untouched below.
+        $allSourcesAreWarehouses = $lines->every(
+            fn ($line) => Location::find($line['from_location_id'])?->isWarehouse() ?? false
+        );
 
-        DB::transaction(function () use ($source, $validated, $toLocation) {
-            $sourceQuantityBefore = $source->quantity;
-
-            $destination = Inventory::where('product_id', $source->product_id)
-                ->where('location_id', $validated['to_location_id'])
-                ->lockForUpdate()
-                ->first();
-
-            $destinationQuantityBefore = $destination->quantity ?? 0;
-
-            // Quiet mutations here: a transfer is logged as a single clear
-            // "transferred" entry below, not as two generic quantity-changed
-            // entries from the normal created/updated observer.
-            $source->decrementQuietly('quantity', $validated['quantity']);
-
-            if ($destination) {
-                $destination->incrementQuietly('quantity', $validated['quantity']);
-            } else {
-                $destination = new Inventory([
-                    'product_id' => $source->product_id,
-                    'location_id' => $validated['to_location_id'],
-                    'quantity' => $validated['quantity'],
+        if ($allSourcesAreWarehouses && ! $toLocation->isWarehouse()) {
+            $stockTransfer = DB::transaction(function () use ($lines, $toLocation, $companyId) {
+                $stockTransfer = StockTransfer::create([
+                    'company_id' => $companyId,
+                    'to_location_id' => $toLocation->id,
+                    'status' => StockTransfer::STATUS_PENDING,
+                    'dispatched_at' => now(),
+                    'created_by' => Auth::id(),
                 ]);
-                $destination->saveQuietly();
-            }
 
-            InventoryActivityLog::create([
-                'inventory_id' => $source->id,
-                'product_name' => $source->product->name ?? 'N/A',
-                'product_code' => $source->product->code ?? null,
-                'location_name' => $source->location->name ?? 'N/A',
-                'user_id' => Auth::id(),
-                'user_name' => Auth::user()?->name ?? 'System',
-                'action' => 'transferred',
-                'changes' => [
-                    'from_location' => $source->location->name ?? 'N/A',
-                    'to_location' => $toLocation->name ?? 'N/A',
-                    'quantity' => $validated['quantity'],
-                    'source_quantity_before' => $sourceQuantityBefore,
-                    'source_quantity_after' => $source->quantity,
-                    'destination_quantity_before' => $destinationQuantityBefore,
-                    'destination_quantity_after' => $destination->quantity,
-                ],
-            ]);
+                foreach ($lines as $line) {
+                    $source = Inventory::where('product_id', $line['product_id'])
+                        ->where('location_id', $line['from_location_id'])
+                        ->whereHas('location', fn ($query) => $query->where('company_id', $companyId))
+                        ->lockForUpdate()
+                        ->firstOrFail();
+
+                    if ($line['quantity'] > $source->quantity) {
+                        throw ValidationException::withMessages([
+                            'quantity' => "Only {$source->quantity} units of \"{$source->product->name}\" available at {$source->location->name}.",
+                        ]);
+                    }
+
+                    $sourceQuantityBefore = $source->quantity;
+
+                    // Quiet mutation: the dispatch is logged as a single
+                    // clear "transfer_dispatched" entry below, not as a
+                    // generic quantity-changed entry.
+                    $source->decrementQuietly('quantity', $line['quantity']);
+
+                    StockTransferItem::create([
+                        'stock_transfer_id' => $stockTransfer->id,
+                        'product_id' => $line['product_id'],
+                        'from_location_id' => $line['from_location_id'],
+                        'quantity' => $line['quantity'],
+                    ]);
+
+                    InventoryActivityLog::create([
+                        'inventory_id' => $source->id,
+                        'product_name' => $source->product->name ?? 'N/A',
+                        'product_code' => $source->product->code ?? null,
+                        'location_name' => $source->location->name ?? 'N/A',
+                        'user_id' => Auth::id(),
+                        'user_name' => Auth::user()?->name ?? 'System',
+                        'action' => 'transfer_dispatched',
+                        'changes' => [
+                            'stock_transfer_id' => $stockTransfer->id,
+                            'from_location' => $source->location->name ?? 'N/A',
+                            'to_location' => $toLocation->name ?? 'N/A',
+                            'quantity' => $line['quantity'],
+                            'source_quantity_before' => $sourceQuantityBefore,
+                            'source_quantity_after' => $source->quantity,
+                        ],
+                    ]);
+                }
+
+                return $stockTransfer;
+            });
+
+            return redirect()->route('stock-transfers.show', $stockTransfer)
+                ->with('success', "Transfer dispatched — awaiting receipt at {$toLocation->name}.");
+        }
+
+        DB::transaction(function () use ($lines, $toLocation, $companyId) {
+            foreach ($lines as $line) {
+                $source = Inventory::where('product_id', $line['product_id'])
+                    ->where('location_id', $line['from_location_id'])
+                    ->whereHas('location', fn ($query) => $query->where('company_id', $companyId))
+                    ->lockForUpdate()
+                    ->firstOrFail();
+
+                if ($line['quantity'] > $source->quantity) {
+                    throw ValidationException::withMessages([
+                        'quantity' => "Only {$source->quantity} units of \"{$source->product->name}\" available at {$source->location->name}.",
+                    ]);
+                }
+
+                $sourceQuantityBefore = $source->quantity;
+
+                $destination = Inventory::where('product_id', $line['product_id'])
+                    ->where('location_id', $toLocation->id)
+                    ->lockForUpdate()
+                    ->first();
+
+                $destinationQuantityBefore = $destination->quantity ?? 0;
+
+                // Quiet mutations here: a transfer is logged as a single clear
+                // "transferred" entry below, not as two generic quantity-changed
+                // entries from the normal created/updated observer.
+                $source->decrementQuietly('quantity', $line['quantity']);
+
+                if ($destination) {
+                    $destination->incrementQuietly('quantity', $line['quantity']);
+                } else {
+                    $destination = new Inventory([
+                        'product_id' => $line['product_id'],
+                        'location_id' => $toLocation->id,
+                        'quantity' => $line['quantity'],
+                    ]);
+                    $destination->saveQuietly();
+                }
+
+                InventoryActivityLog::create([
+                    'inventory_id' => $source->id,
+                    'product_name' => $source->product->name ?? 'N/A',
+                    'product_code' => $source->product->code ?? null,
+                    'location_name' => $source->location->name ?? 'N/A',
+                    'user_id' => Auth::id(),
+                    'user_name' => Auth::user()?->name ?? 'System',
+                    'action' => 'transferred',
+                    'changes' => [
+                        'from_location' => $source->location->name ?? 'N/A',
+                        'to_location' => $toLocation->name ?? 'N/A',
+                        'quantity' => $line['quantity'],
+                        'source_quantity_before' => $sourceQuantityBefore,
+                        'source_quantity_after' => $source->quantity,
+                        'destination_quantity_before' => $destinationQuantityBefore,
+                        'destination_quantity_after' => $destination->quantity,
+                    ],
+                ]);
+            }
         });
 
         return redirect()->route('inventory.index')->with('success', 'Stock transferred successfully.');

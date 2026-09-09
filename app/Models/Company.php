@@ -18,7 +18,19 @@ class Company extends Model
     public $incrementing = true;
     protected $keyType = 'int';
 
-    protected $fillable = ['company_id', 'name'];
+    protected $fillable = ['company_id', 'name', 'is_active'];
+
+    protected function casts(): array
+    {
+        return [
+            'is_active' => 'boolean',
+        ];
+    }
+
+    public function isActive(): bool
+    {
+        return (bool) $this->is_active;
+    }
 
     /**
      * Accessor to handle MSSQL column casing differences (company_id vs COMPANY_ID).
