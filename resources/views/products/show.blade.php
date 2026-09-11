@@ -108,9 +108,10 @@
                 </div>
                 <div class="list-group list-group-flush">
                     @forelse($product->inventories as $item)
+                        @php [$statusClass, $statusLabel] = $item->stock_status_badge; @endphp
                         <div class="list-group-item d-flex justify-content-between align-items-center px-3 py-2">
                             <span class="small">{{ $item->location->name ?? 'N/A' }}</span>
-                            <span class="badge {{ $item->quantity > 0 ? 'bg-success-subtle text-success border-success-subtle' : 'bg-danger-subtle text-danger border-danger-subtle' }} border">
+                            <span class="badge {{ $statusClass }} border" title="{{ $statusLabel }}">
                                 {{ $item->quantity }} units
                             </span>
                         </div>

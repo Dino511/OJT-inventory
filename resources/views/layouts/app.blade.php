@@ -56,8 +56,17 @@
             transition: border-color 0.15s ease, transform 0.15s ease;
         }
         .stat-tile:hover { border-color: #1f883d; transform: translateY(-1px); }
-        .stat-tile .label { font-size: 0.78rem; font-weight: 600; letter-spacing: 0.02em; text-transform: uppercase; color: #636c76; }
-        .stat-tile .value { font-size: 1.6rem; font-weight: 700; color: #1f2328; font-variant-numeric: tabular-nums; }
+        /* Labels wrap to 1 or 2 lines depending on length ("LOW STOCK" vs
+           "PENDING PURCHASE ORDERS"). Reserving a fixed 2-line height here
+           and bottom-aligning the text keeps every .value below it starting
+           at the same vertical offset, so the big numbers line up across
+           cards regardless of label length. */
+        .stat-tile .label {
+            font-size: 0.78rem; font-weight: 600; letter-spacing: 0.02em; text-transform: uppercase; color: #636c76;
+            line-height: 1.3; min-height: calc(1.3em * 2);
+            display: flex; align-items: flex-end;
+        }
+        .stat-tile .value { font-size: 1.6rem; font-weight: 700; color: #1f2328; font-variant-numeric: tabular-nums; line-height: 1.2; }
         .stat-tile-warn { border-color: #d1242f; }
         .stat-tile-warn .value { color: #d1242f; }
 

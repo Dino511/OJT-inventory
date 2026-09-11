@@ -91,7 +91,7 @@ Route::middleware('auth')->group(function () {
     });
 
     Route::middleware('role:super_admin')->group(function () {
-        Route::resource('users', UserController::class);
+        Route::resource('users', UserController::class)->except('show');
         Route::patch('/users/{user}/toggle-status', [UserController::class, 'toggleStatus'])->name('users.toggle-status');
 
         Route::get('/deliveries/{purchase_order}/edit', [DeliveryController::class, 'edit'])->name('deliveries.edit');

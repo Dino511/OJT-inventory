@@ -118,14 +118,19 @@ class SupplierController extends Controller
             'secondary_contact_person_prefix' => ['nullable', 'in:' . implode(',', $prefixes)],
             'secondary_contact_person_name' => 'nullable|string|max:150',
             'phone_country_code' => ['required', 'in:' . implode(',', $codes)],
-            'phone_number' => ['required', 'string', 'regex:/^[0-9]{9}$/'],
+            'phone_number' => ['required', 'string', 'regex:/^[0-9]{7,12}$/'],
             'secondary_phone_country_code' => ['nullable', 'in:' . implode(',', $codes)],
-            'secondary_phone_number' => ['nullable', 'string', 'regex:/^[0-9]{9}$/'],
+            'secondary_phone_number' => ['nullable', 'string', 'regex:/^[0-9]{7,12}$/'],
             'email' => 'nullable|email|max:255',
             'address' => 'required|string|max:500',
         ], [
-            'phone_number.regex' => 'The phone number must be exactly 9 digits (excluding the country code).',
-            'secondary_phone_number.regex' => 'The secondary phone number must be exactly 9 digits (excluding the country code).',
+            // A flat 9-digit rule only fit the Philippines; the dropdown
+            // above offers 16 other country codes (US, UK, Japan, etc.)
+            // whose local numbers are commonly 7-12 digits, so the range
+            // just needs to reject obvious junk, not enforce one country's
+            // exact length on every country.
+            'phone_number.regex' => 'The phone number must be 7 to 12 digits (excluding the country code).',
+            'secondary_phone_number.regex' => 'The secondary phone number must be 7 to 12 digits (excluding the country code).',
         ]);
 
         $validated['contact_person'] = trim(($validated['contact_person_prefix'] ?? '') . ' ' . $validated['contact_person_name']);

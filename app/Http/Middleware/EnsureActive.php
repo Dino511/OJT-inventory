@@ -12,9 +12,14 @@ class EnsureActive
     /**
      * Handle an incoming request.
      *
-     * A Super Admin can deactivate an account while it's mid-session; this
-     * catches that on the deactivated user's very next request instead of
-     * waiting for them to log out and back in.
+     * Catches two account changes that can happen while a user is already
+     * mid-session, on their very next request, instead of waiting for them
+     * to log out and back in (which would otherwise be the only place
+     * either check ran — see AuthController::login):
+     *  - a Super Admin deactivates the account;
+     *  - a Super Admin demotes the account to Moderator, who — per
+     *    User::canAccessInventoryApp() — have no access to this back
+     *    office at all and are POS-only.
      *
      * @param  Closure(Request): (Response)  $next
      */
@@ -27,6 +32,16 @@ class EnsureActive
 
             return redirect()->route('login')->withErrors([
                 'email' => 'This account has been deactivated. Contact an administrator.',
+            ]);
+        }
+
+        if (Auth::check() && ! Auth::user()->canAccessInventoryApp()) {
+            Auth::logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+
+            return redirect()->route('login')->withErrors([
+                'email' => 'This account only has access to the POS system.',
             ]);
         }
 

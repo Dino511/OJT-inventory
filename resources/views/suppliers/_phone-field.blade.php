@@ -19,10 +19,10 @@
         <input type="text" id="{{ $fieldPrefix }}_number" name="{{ $fieldPrefix }}_number"
                class="form-control form-control-sm phone-digits-only @error($fieldPrefix . '_number') is-invalid @enderror"
                value="{{ old($fieldPrefix . '_number', $numberValue) }}"
-               inputmode="numeric" pattern="[0-9]{9}" maxlength="9"
+               inputmode="numeric" pattern="[0-9]{7,12}" maxlength="12"
                placeholder="e.g. 917123456" {{ $required ? 'required' : '' }}>
     </div>
-    <div class="form-text small">Enter exactly 9 digits, without the country code.</div>
+    <div class="form-text small">Enter 7 to 12 digits, without the country code.</div>
     @error($fieldPrefix . '_country_code')
         <div class="invalid-feedback d-block small">{{ $message }}</div>
     @enderror
@@ -34,10 +34,10 @@
 @once
     @push('scripts')
         <script>
-            // Restrict phone-number inputs to digits only, capped at 9 characters.
+            // Restrict phone-number inputs to digits only, capped at 12 characters.
             document.querySelectorAll('.phone-digits-only').forEach(function (input) {
                 input.addEventListener('input', function () {
-                    this.value = this.value.replace(/\D/g, '').slice(0, 9);
+                    this.value = this.value.replace(/\D/g, '').slice(0, 12);
                 });
             });
         </script>

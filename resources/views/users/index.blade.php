@@ -21,23 +21,48 @@
             <span class="badge bg-light text-dark border font-monospace">{{ $users->count() }} Total</span>
         </div>
 
-        <div class="table-responsive">
+        <div class="table-responsive" x-data="usersTable()">
             <table class="table table-hover align-middle mb-0">
                 <thead>
                     <tr>
-                        <th scope="col" style="width: 80px;">ID</th>
-                        <th scope="col">NAME</th>
-                        <th scope="col">EMAIL</th>
-                        <th scope="col">ROLE</th>
-                        <th scope="col">STATUS</th>
-                        <th scope="col">COMPANIES</th>
-                        <th scope="col">LOCATION</th>
+                        @foreach([
+                            ['key' => 'id', 'label' => 'ID', 'style' => 'width: 80px;'],
+                            ['key' => 'name', 'label' => 'NAME'],
+                            ['key' => 'email', 'label' => 'EMAIL'],
+                            ['key' => 'role', 'label' => 'ROLE'],
+                            ['key' => 'status', 'label' => 'STATUS'],
+                            ['key' => 'companies', 'label' => 'COMPANIES'],
+                            ['key' => 'location', 'label' => 'LOCATION'],
+                        ] as $col)
+                            <th scope="col" @if(!empty($col['style'])) style="{{ $col['style'] }}" @endif>
+                                <button type="button" class="btn btn-link btn-sm p-0 fw-semibold text-decoration-none text-dark d-inline-flex align-items-center gap-1"
+                                        @click="sort('{{ $col['key'] }}')">
+                                    {{ $col['label'] }} <i class="bi small" :class="icon('{{ $col['key'] }}')"></i>
+                                </button>
+                            </th>
+                        @endforeach
                         <th scope="col" class="text-end" style="width: 220px;">ACTIONS</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody x-ref="tbody">
                     @forelse($users as $user)
-                        <tr>
+                        @php
+                            $roleBadge = match($user->role) {
+                                'super_admin' => ['bg-danger-subtle text-danger', 'Super Admin'],
+                                'business_admin' => ['bg-primary-subtle text-primary', 'Business Admin'],
+                                default => ['bg-secondary-subtle text-secondary', 'Moderator'],
+                            };
+                            $companiesSortValue = mb_strtolower($user->companies->pluck('name')->implode(', '));
+                            $locationSortValue = $user->isModerator() ? mb_strtolower($user->location->name ?? '') : '';
+                        @endphp
+                        <tr data-row="1"
+                            data-sort-id="{{ $user->id }}"
+                            data-sort-name="{{ mb_strtolower($user->name) }}"
+                            data-sort-email="{{ mb_strtolower($user->email) }}"
+                            data-sort-role="{{ mb_strtolower($roleBadge[1]) }}"
+                            data-sort-status="{{ $user->is_active ? 'active' : 'inactive' }}"
+                            data-sort-companies="{{ $companiesSortValue }}"
+                            data-sort-location="{{ $locationSortValue }}">
                             <td>
                                 <span class="badge bg-light text-secondary border font-monospace">#{{ $user->id }}</span>
                             </td>
@@ -51,13 +76,6 @@
                             </td>
                             <td class="text-secondary small">{{ $user->email }}</td>
                             <td>
-                                @php
-                                    $roleBadge = match($user->role) {
-                                        'super_admin' => ['bg-danger-subtle text-danger', 'Super Admin'],
-                                        'business_admin' => ['bg-primary-subtle text-primary', 'Business Admin'],
-                                        default => ['bg-secondary-subtle text-secondary', 'Moderator'],
-                                    };
-                                @endphp
                                 <span class="badge {{ $roleBadge[0] }} border">{{ $roleBadge[1] }}</span>
                             </td>
                             <td>
@@ -189,6 +207,47 @@
 
 @push('scripts')
     <script>
+        // Client-side sort: moves the existing <tr> nodes into sorted order
+        // rather than re-rendering them, so each row's forms (CSRF tokens,
+        // method-spoofing) and the View Profile modal's data-* attributes
+        // stay intact — no server round-trip needed.
+        function usersTable() {
+            return {
+                sortKey: null,
+                sortAsc: true,
+
+                icon(key) {
+                    if (this.sortKey !== key) return 'bi-arrow-down-up text-muted';
+                    const numeric = key === 'id';
+                    if (numeric) return this.sortAsc ? 'bi-sort-numeric-down' : 'bi-sort-numeric-up';
+                    return this.sortAsc ? 'bi-sort-alpha-down' : 'bi-sort-alpha-up';
+                },
+
+                sort(key) {
+                    const tbody = this.$refs.tbody;
+                    const rows = Array.from(tbody.querySelectorAll('tr[data-row="1"]'));
+                    if (!rows.length) return;
+
+                    this.sortAsc = (this.sortKey === key) ? !this.sortAsc : true;
+                    this.sortKey = key;
+
+                    const dir = this.sortAsc ? 1 : -1;
+                    const isNumeric = key === 'id';
+                    const attr = 'sort' + key.charAt(0).toUpperCase() + key.slice(1);
+
+                    rows.sort((a, b) => {
+                        const va = a.dataset[attr] ?? '';
+                        const vb = b.dataset[attr] ?? '';
+                        return isNumeric
+                            ? (parseFloat(va) - parseFloat(vb)) * dir
+                            : va.localeCompare(vb) * dir;
+                    });
+
+                    rows.forEach(row => tbody.appendChild(row));
+                },
+            };
+        }
+
         const userProfileModal = document.getElementById('userProfileModal');
         userProfileModal.addEventListener('show.bs.modal', function (event) {
             const btn = event.relatedTarget;

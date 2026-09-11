@@ -14,6 +14,13 @@ class PurchaseOrderItem extends Model
         'unit_cost',
     ];
 
+    protected function casts(): array
+    {
+        return [
+            'unit_cost' => 'decimal:2',
+        ];
+    }
+
     public function purchaseOrder(): BelongsTo
     {
         return $this->belongsTo(PurchaseOrder::class);

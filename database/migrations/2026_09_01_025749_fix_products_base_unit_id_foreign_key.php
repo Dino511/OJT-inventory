@@ -40,8 +40,18 @@ return new class extends Migration
         });
     }
 
+    /**
+     * The legacy constraint this migration cleans up can only exist on the
+     * SQL Server databases this app has actually run on historically — a
+     * database built fresh on any other driver (e.g. SQLite in the test
+     * suite) never had it, so there's nothing to detect there.
+     */
     private function foreignKeyExists(string $foreignKeyName): bool
     {
+        if (DB::connection()->getDriverName() !== 'sqlsrv') {
+            return false;
+        }
+
         return DB::table('sys.foreign_keys')->where('name', $foreignKeyName)->exists();
     }
 };

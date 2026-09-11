@@ -124,6 +124,7 @@ class InventoryController extends Controller
     public function showTransfer(Inventory $inventory)
     {
         $inventory->load(['product', 'location']);
+        abort_unless($inventory->product, 404, 'This stock record\'s product no longer exists.');
         $companyId = $inventory->product->company_id;
 
         // Every location (in the same company) that currently holds stock of
@@ -158,6 +159,7 @@ class InventoryController extends Controller
 
     public function transfer(Request $request, Inventory $inventory)
     {
+        abort_unless($inventory->product, 404, 'This stock record\'s product no longer exists.');
         $companyId = $inventory->product->company_id;
 
         $validated = $request->validate([

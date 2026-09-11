@@ -162,6 +162,11 @@ class ProductController extends Controller
     {
         $product->load(['company', 'category.parent', 'baseUnit', 'inventories.location', 'unitConversion.toUnit']);
 
+        // Every inventory row's product is this same $product — set it
+        // directly instead of eager-loading inventories.product, which
+        // would re-fetch already-known rows for no reason.
+        $product->inventories->each(fn ($item) => $item->setRelation('product', $product));
+
         return view('products.show', compact('product'));
     }
 

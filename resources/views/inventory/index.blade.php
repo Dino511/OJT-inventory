@@ -9,7 +9,7 @@
             <h3 class="fw-bold mb-1">Inventory Items</h3>
             <nav aria-label="breadcrumb">
                 <ol class="breadcrumb mb-0">
-                    <li class="breadcrumb-item"><a href="{{ route('inventory.index') }}" class="text-decoration-none">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="{{ route('dashboard.index') }}" class="text-decoration-none">Dashboard</a></li>
                     <li class="breadcrumb-item active" aria-current="page">Inventory</li>
                 </ol>
             </nav>
@@ -62,6 +62,7 @@
                                 QUANTITY <i class="bi {{ $numIcon('quantity') }} small"></i>
                             </a>
                         </th>
+                        <th>STATUS</th>
                         <th class="text-end" style="width: 270px;">ACTIONS</th>
                     </tr>
                 </thead>
@@ -82,10 +83,14 @@
                                     @endif
                                 </span>
                             </td>
+                            @php [$statusClass, $statusLabel] = $item->stock_status_badge; @endphp
                             <td>
-                                <span class="badge {{ ($item->quantity ?? $item->stock ?? 0) > 10 ? 'bg-success-subtle text-success border border-success-subtle' : 'bg-danger-subtle text-danger border border-danger-subtle' }} px-2 py-1">
+                                <span class="badge {{ $statusClass }} border px-2 py-1">
                                     {{ $item->quantity ?? $item->stock ?? 0 }} units
                                 </span>
+                            </td>
+                            <td>
+                                <span class="badge {{ $statusClass }} border px-2 py-1">{{ $statusLabel }}</span>
                             </td>
                             <td class="text-end">
                                 <div class="btn-group btn-group-sm" role="group">
@@ -114,7 +119,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="5" class="text-center py-5 text-muted">
+                            <td colspan="6" class="text-center py-5 text-muted">
                                 <i class="bi bi-inbox fs-2 d-block mb-2 text-secondary"></i>
                                 No inventory items found.
                             </td>

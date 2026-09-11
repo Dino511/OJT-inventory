@@ -32,6 +32,10 @@ class Product extends Model
     {
         return [
             'is_active' => 'boolean',
+            'unit_value' => 'decimal:2',
+            'selling_price' => 'decimal:2',
+            'cost' => 'decimal:2',
+            'reorder_point' => 'decimal:2',
         ];
     }
 
